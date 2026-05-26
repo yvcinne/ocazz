@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="172" height="36" viewBox="0 0 172 36">
+  <!-- Blue square -->
+  <rect width="36" height="36" fill="#2563EB"/>
+  <!-- Car icon (viewBox 0 0 24 24 → 22×22, offset 7px) -->
+  <g transform="translate(7, 7) scale(0.9167)" fill="white">
+    <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99z"/>
+    <circle cx="7.5" cy="14.5" r="1.5"/>
+    <circle cx="16.5" cy="14.5" r="1.5"/>
+  </g>
+  <!-- Text: "ocazz" white + ".ma" blue, in one text node so tspan positioning is automatic -->
+  <text x="46" y="26" font-family="Manrope, sans-serif" font-weight="800" font-size="20" letter-spacing="-0.3">
+    <tspan fill="white">ocazz</tspan><tspan fill="#2563EB">.ma</tspan>
+  </text>
+</svg>
