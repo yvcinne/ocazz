@@ -139,12 +139,12 @@ export default function Layout() {
                 )}
 
                 {/* User name + logout */}
-                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 4px" }}>
+                <Link to="/User/Dashboard" style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 4px", textDecoration: "none" }}>
                   <div style={{ width: 32, height: 32, background: "var(--accent-blue)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 13 }}>
                     {user.name?.charAt(0).toUpperCase() ?? "?"}
                   </div>
                   <span style={{ color: "#fff", fontSize: 13, fontWeight: 500, maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.name}</span>
-                </div>
+                </Link>
                 <button onClick={handleLogout} className="btn-ghost" style={{ height: 40, lineHeight: "40px", padding: "0 12px", fontSize: 13, color: "#aaa" }}>
                   Déconnexion
                 </button>
@@ -183,6 +183,9 @@ export default function Layout() {
             <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
               {user ? (
                 <>
+                  <Link to="/User/Dashboard" onClick={() => setOpen(false)} className="btn-secondary" style={{ flex: 1, height: 48, lineHeight: "48px", fontSize: 14, textAlign: "center" }}>
+                    Mon espace
+                  </Link>
                   <Link to="/messages" onClick={() => setOpen(false)} className="btn-secondary" style={{ flex: 1, height: 48, lineHeight: "48px", fontSize: 14, textAlign: "center", position: "relative" }}>
                     Messages {unread > 0 && `(${unread})`}
                   </Link>

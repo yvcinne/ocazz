@@ -52,7 +52,7 @@ export default function Login() {
         </div>
 
         <p style={{ textAlign: "center", color: "var(--text-faint)", fontSize: 12, marginTop: 20 }}>
-          <a href="#" style={{ color: "inherit", textDecoration: "none" }}>Conditions d'utilisation</a> · <a href="#" style={{ color: "inherit", textDecoration: "none" }}>Confidentialité</a>
+          <Link to="/conditions" style={{ color: "inherit", textDecoration: "none" }}>Conditions d'utilisation</Link> · <Link to="/confidentialite" style={{ color: "inherit", textDecoration: "none" }}>Confidentialité</Link>
         </p>
       </div>
     </div>

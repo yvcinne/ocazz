@@ -17,11 +17,12 @@ class UserController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
-            'name'                  => 'sometimes|string|max:255',
-            'phone'                 => 'sometimes|nullable|string|max:20',
-            'email'                 => ['sometimes', 'email', Rule::unique('users')->ignore($user->id)],
-            'password'              => 'sometimes|string|min:8|confirmed',
-            'current_password'      => 'required_with:password|current_password',
+            'name'             => 'sometimes|string|max:255',
+            'last_name'        => 'sometimes|nullable|string|max:255',
+            'phone'            => 'sometimes|nullable|string|max:20',
+            'email'            => ['sometimes', 'email', Rule::unique('users')->ignore($user->id)],
+            'password'         => 'sometimes|string|min:8|confirmed',
+            'current_password' => 'required_with:password|current_password',
         ]);
 
         if (isset($validated['password'])) {

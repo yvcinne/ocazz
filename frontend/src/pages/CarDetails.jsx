@@ -138,6 +138,8 @@ export default function CarDetails() {
   const [msg, setMsg]           = useState("");
   const [sent, setSent]         = useState(false);
   const [sending, setSending]   = useState(false);
+  const [isFav, setIsFav]       = useState(false);
+  const [favLoading, setFavLoading] = useState(false);
 
   const lbPrev  = useCallback(() => setActiveImg(i => (i - 1 + (car?.images?.length ?? 1)) % (car?.images?.length ?? 1)), [car]);
   const lbNext  = useCallback((i) => setActiveImg(typeof i === "number" ? i : prev => (prev + 1) % (car?.images?.length ?? 1)), [car]);
@@ -152,6 +154,21 @@ export default function CarDetails() {
         if (err.response?.status === 404) setNotFound(true);
       });
   }, [id]);
+
+  useEffect(() => {
+    if (!localStorage.getItem("token") || !id) return;
+    axiosClient.get("/favorites")
+      .then(r => setIsFav(r.data.some(f => f.annonce_id == id)))
+      .catch(() => {});
+  }, [id]);
+
+  const handleToggleFav = async () => {
+    if (!localStorage.getItem("token")) { navigate(`/Login?redirect=/cars/${id}`); return; }
+    setFavLoading(true);
+    setIsFav(v => !v);
+    await axiosClient.post(`/favorites/toggle/${id}`).catch(() => setIsFav(v => !v));
+    setFavLoading(false);
+  };
 
   if (loading) return <Skeleton />;
 
@@ -312,7 +329,24 @@ export default function CarDetails() {
               <p style={{ fontSize:36, fontWeight:800, color:"var(--accent-blue)", margin:"12px 0 4px" }}>
                 {price}<span style={{ fontSize:16, color:"var(--text-muted)", fontWeight:400, marginLeft:6 }}>MAD</span>
               </p>
-              <p style={{ color:"var(--text-muted)", fontSize:13, margin:0 }}>{km} km · {car.fuel_type}</p>
+              <p style={{ color:"var(--text-muted)", fontSize:13, margin:"0 0 20px" }}>{km} km · {car.fuel_type}</p>
+              <button
+                onClick={handleToggleFav}
+                disabled={favLoading}
+                style={{
+                  width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+                  padding:"10px 0", border:`1px solid ${isFav ? "#e53e3e" : "var(--border)"}`,
+                  background: isFav ? "#fff5f5" : "var(--bg-white)",
+                  color: isFav ? "#e53e3e" : "var(--text-primary)",
+                  cursor:"pointer", fontFamily:"Manrope,sans-serif", fontWeight:600, fontSize:14,
+                  transition:"all 0.15s",
+                }}
+              >
+                <svg width="17" height="17" viewBox="0 0 24 24" fill={isFav ? "#e53e3e" : "none"} stroke={isFav ? "#e53e3e" : "currentColor"} strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                </svg>
+                {isFav ? "Retirer des favoris" : "Ajouter aux favoris"}
+              </button>
             </div>
 
             {/* Message form */}

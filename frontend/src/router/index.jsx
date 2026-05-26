@@ -18,6 +18,7 @@ import Contact from "../pages/static/Contact";
 import FAQ from "../pages/static/FAQ";
 import GoogleAuthCallback from "../pages/GoogleAuthCallback";
 import GoogleAuthComplete from "../pages/GoogleAuthComplete";
+import UserDashboard from "../pages/UserDashboard";
 import { About, HowItWorks, EspaceRevendeur, Conditions, Confidentialite, CentreAide, Blog } from "../pages/static/StaticPages";
 
 export const User_Dashboard = '/User/dashboard';
@@ -45,7 +46,7 @@ export const router = createBrowserRouter([
             { path: "/sell",           element: <SellYourCar /> },
             { path: "/cars/:id",       element: <CarDetails /> },
             { path: "/messages",       element: <Messages /> },
-            { path: "/User/Dashboard", element: <p style={{ padding: 40, fontFamily: "Manrope,sans-serif" }}>Tableau de bord utilisateur — à venir.</p> },
+            { path: "/User/Dashboard", element: <UserDashboard /> },
             { path: "/about",               element: <About /> },
             { path: "/how-it-works",        element: <HowItWorks /> },
             { path: "/espace-revendeur",    element: <EspaceRevendeur /> },

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { axiosClient } from "../api/axios";
 
 const BRANDS = ["Toutes", "Audi", "BMW", "Citroën", "Dacia", "Fiat", "Ford", "Honda", "Hyundai",
@@ -10,49 +10,75 @@ const TRANS  = ["Toutes", "Manuelle", "Automatique"];
 const CONDS  = ["Tous", "Neuf", "Excellent", "Très bon", "Bon", "Correct"];
 const CURRENT_YEAR = new Date().getFullYear();
 
-function CarCard({ car }) {
+function HeartButton({ isFav, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      title={isFav ? "Retirer des favoris" : "Ajouter aux favoris"}
+      style={{
+        position: "absolute", top: 10, left: 10, zIndex: 2,
+        width: 34, height: 34, background: "rgba(255,255,255,0.92)",
+        border: "none", cursor: "pointer", display: "flex",
+        alignItems: "center", justifyContent: "center",
+        transition: "transform 0.15s, background 0.15s",
+        borderRadius: 0,
+      }}
+      onMouseEnter={e => e.currentTarget.style.transform = "scale(1.12)"}
+      onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+    >
+      <svg width="17" height="17" viewBox="0 0 24 24" fill={isFav ? "#e53e3e" : "none"} stroke={isFav ? "#e53e3e" : "#555"} strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+      </svg>
+    </button>
+  );
+}
+
+function CarCard({ car, isFav, onToggleFav }) {
   const img   = car.images?.[0]?.url;
   const km    = Number(car.mileage).toLocaleString("fr-MA");
   const price = Number(car.price).toLocaleString("fr-MA");
 
   return (
-    <Link to={`/cars/${car.id}`} style={{ textDecoration: "none", color: "inherit", display: "block", borderRadius: "var(--radius-md)", overflow: "hidden", border: "1px solid var(--border)", background: "var(--bg-white)", boxShadow: "var(--shadow-xs)", transition: "box-shadow 0.25s, transform 0.25s" }}
+    <div style={{ position: "relative", borderRadius: "var(--radius-md)", overflow: "hidden", border: "1px solid var(--border)", background: "var(--bg-white)", boxShadow: "var(--shadow-xs)", transition: "box-shadow 0.25s, transform 0.25s" }}
       onMouseOver={e => { e.currentTarget.style.boxShadow = "var(--shadow-lg)"; e.currentTarget.style.transform = "translateY(-3px)"; }}
       onMouseOut={e => { e.currentTarget.style.boxShadow = "var(--shadow-xs)"; e.currentTarget.style.transform = "none"; }}>
-      <div style={{ position: "relative", height: 185, overflow: "hidden", background: "var(--bg-off)" }}>
-        {img ? (
-          <img src={img} alt={car.title} referrerPolicy="no-referrer"
-            style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.45s cubic-bezier(0.4,0,0.2,1)" }}
-            onMouseOver={e => e.target.style.transform = "scale(1.06)"}
-            onMouseOut={e => e.target.style.transform = "scale(1)"} />
-        ) : (
-          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--border)" strokeWidth={1.5}>
-              <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99z"/>
-              <circle cx="7.5" cy="14.5" r="1.5"/><circle cx="16.5" cy="14.5" r="1.5"/>
-            </svg>
-          </div>
-        )}
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(0,0,0,0.45) 0%,transparent 55%)" }}/>
-        {car.city && <span className="badge-dark" style={{ position: "absolute", top: 10, right: 10 }}>{car.city}</span>}
-      </div>
-      <div style={{ padding: "16px 18px 18px" }}>
-        <p style={{ color: "var(--text-faint)", fontSize: 12, margin: "0 0 5px", fontWeight: 500 }}>
-          {car.model_year} · {car.fuel_type} · {km} km
-        </p>
-        <p style={{ fontFamily: "Manrope,sans-serif", fontWeight: 700, fontSize: 15, margin: "0 0 12px", color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          {car.brand} {car.model}
-        </p>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontFamily: "Manrope,sans-serif", fontWeight: 800, fontSize: 19, color: "var(--accent-blue)" }}>
-            {price} <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text-faint)" }}>MAD</span>
-          </span>
-          <span style={{ color: "var(--accent-blue)", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 2 }}>
-            Voir <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-          </span>
+      <HeartButton isFav={isFav} onClick={e => { e.stopPropagation(); e.preventDefault(); onToggleFav(car.id); }} />
+      <Link to={`/cars/${car.id}`} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+        <div style={{ position: "relative", height: 185, overflow: "hidden", background: "var(--bg-off)" }}>
+          {img ? (
+            <img src={img} alt={car.title} referrerPolicy="no-referrer"
+              style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.45s cubic-bezier(0.4,0,0.2,1)" }}
+              onMouseOver={e => e.target.style.transform = "scale(1.06)"}
+              onMouseOut={e => e.target.style.transform = "scale(1)"} />
+          ) : (
+            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--border)" strokeWidth={1.5}>
+                <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99z"/>
+                <circle cx="7.5" cy="14.5" r="1.5"/><circle cx="16.5" cy="14.5" r="1.5"/>
+              </svg>
+            </div>
+          )}
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(0,0,0,0.45) 0%,transparent 55%)" }}/>
+          {car.city && <span className="badge-dark" style={{ position: "absolute", top: 10, right: 10 }}>{car.city}</span>}
         </div>
-      </div>
-    </Link>
+        <div style={{ padding: "16px 18px 18px" }}>
+          <p style={{ color: "var(--text-faint)", fontSize: 12, margin: "0 0 5px", fontWeight: 500 }}>
+            {car.model_year} · {car.fuel_type} · {km} km
+          </p>
+          <p style={{ fontFamily: "Manrope,sans-serif", fontWeight: 700, fontSize: 15, margin: "0 0 12px", color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {car.brand} {car.model}
+          </p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontFamily: "Manrope,sans-serif", fontWeight: 800, fontSize: 19, color: "var(--accent-blue)" }}>
+              {price} <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text-faint)" }}>MAD</span>
+            </span>
+            <span style={{ color: "var(--accent-blue)", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 2 }}>
+              Voir <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+            </span>
+          </div>
+        </div>
+      </Link>
+    </div>
   );
 }
 
@@ -71,6 +97,7 @@ function Skeleton() {
 
 export default function Marketplace() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const [search,   setSearch]   = useState(searchParams.get("q") || "");
   const [brand,    setBrand]    = useState("Toutes");
@@ -89,6 +116,7 @@ export default function Marketplace() {
   const [loading,     setLoading]     = useState(true);
   const [suggestions, setSuggestions] = useState([]);
   const [showSugg,    setShowSugg]    = useState(false);
+  const [favIds,      setFavIds]      = useState(new Set());
 
   const debounceRef  = useRef(null);
   const inputWrapRef = useRef(null);
@@ -102,6 +130,29 @@ export default function Marketplace() {
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!localStorage.getItem("token")) return;
+    axiosClient.get("/favorites")
+      .then(r => setFavIds(new Set(r.data.map(f => f.annonce_id))))
+      .catch(() => {});
+  }, []);
+
+  const handleToggleFav = async (annonceId) => {
+    if (!localStorage.getItem("token")) { navigate("/Login?redirect=/Marketplace"); return; }
+    setFavIds(prev => {
+      const next = new Set(prev);
+      next.has(annonceId) ? next.delete(annonceId) : next.add(annonceId);
+      return next;
+    });
+    await axiosClient.post(`/favorites/toggle/${annonceId}`).catch(() => {
+      setFavIds(prev => {
+        const next = new Set(prev);
+        next.has(annonceId) ? next.delete(annonceId) : next.add(annonceId);
+        return next;
+      });
+    });
+  };
 
   const handleSearchInput = (value) => {
     setSearch(value);
@@ -332,7 +383,7 @@ export default function Marketplace() {
           ) : (
             <>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 20 }}>
-                {cars.map(car => <CarCard key={car.id} car={car} />)}
+                {cars.map(car => <CarCard key={car.id} car={car} isFav={favIds.has(car.id)} onToggleFav={handleToggleFav} />)}
               </div>
 
               {lastPage > 1 && (
