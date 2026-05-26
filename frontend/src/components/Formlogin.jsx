@@ -8,14 +8,32 @@ export default function Formlogin() {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError]       = useState('');
     const [loading, setLoading]   = useState(false);
+    const [notVerified, setNotVerified] = useState(false);
+    const [resendLoading, setResendLoading] = useState(false);
+    const [resendDone, setResendDone] = useState(false);
 
     const navigate = useNavigate();
     const { search } = useLocation();
     const redirectTo = new URLSearchParams(search).get('redirect');
 
+    const resendVerification = async () => {
+        setResendLoading(true);
+        try {
+            await axiosClient.post('/email/resend', { email });
+            setResendDone(true);
+        } catch {
+            // silent — message is generic
+            setResendDone(true);
+        } finally {
+            setResendLoading(false);
+        }
+    };
+
     const onSubmit = async (values) => {
         setLoading(true);
         setError('');
+        setNotVerified(false);
+        setResendDone(false);
         try {
             const response = await axiosClient.post('/login', values);
 
@@ -29,7 +47,11 @@ export default function Formlogin() {
                 setError('Login failed: no token received');
             }
         } catch (err) {
-            setError(err.response?.data?.message || 'Email ou mot de passe incorrect.');
+            if (err.response?.status === 403 && err.response?.data?.status === 'email_not_verified') {
+                setNotVerified(true);
+            } else {
+                setError(err.response?.data?.message || 'Email ou mot de passe incorrect.');
+            }
         } finally {
             setLoading(false);
         }
@@ -37,6 +59,26 @@ export default function Formlogin() {
 
     return (
         <div>
+            {notVerified && (
+                <div style={{ background: "#FFF8E1", border: "1px solid #F59E0B", borderLeft: "4px solid #F59E0B", padding: "12px 16px", marginBottom: 20 }}>
+                    <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: resendDone ? 8 : 0 }}>
+                        <svg width="16" height="16" fill="none" stroke="#B45309" viewBox="0 0 24 24" strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span style={{ color: "#92400E", fontSize: 14, fontFamily: "Manrope,sans-serif" }}>
+                            Votre adresse email n'est pas encore vérifiée.
+                        </span>
+                    </div>
+                    {resendDone ? (
+                        <p style={{ color: "#065F46", fontSize: 13, margin: "0 0 0 26px" }}>Email renvoyé — vérifiez votre boîte mail.</p>
+                    ) : (
+                        <button type="button" onClick={resendVerification} disabled={resendLoading}
+                            style={{ marginLeft: 26, marginTop: 6, background: "none", border: "none", padding: 0, color: "#B45309", fontSize: 13, fontWeight: 600, cursor: "pointer", textDecoration: "underline", fontFamily: "Manrope,sans-serif" }}>
+                            {resendLoading ? "Envoi…" : "Renvoyer l'email de vérification"}
+                        </button>
+                    )}
+                </div>
+            )}
             {error && (
                 <div style={{ background: "#FFF5F5", border: "1px solid var(--error)", borderLeft: "4px solid var(--error)", padding: "12px 16px", marginBottom: 20, display: "flex", gap: 10, alignItems: "center" }}>
                     <svg width="16" height="16" fill="none" stroke="var(--error)" viewBox="0 0 24 24" strokeWidth={2} style={{ flexShrink: 0 }}>

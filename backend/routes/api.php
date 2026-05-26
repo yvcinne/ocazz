@@ -41,6 +41,10 @@ Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 've
     ->middleware(['signed', 'throttle:6,1'])
     ->name('api.verification.verify');
 
+// Public resend (for unverified users who can't authenticate yet)
+Route::post('/email/resend', [EmailVerificationController::class, 'resendPublic'])
+    ->middleware('throttle:6,1');
+
 // Public annonce browsing (no auth required)
 Route::get('annonces', [AnnonceController::class, 'index']);
 Route::get('annonces/{annonce}', [AnnonceController::class, 'show']);

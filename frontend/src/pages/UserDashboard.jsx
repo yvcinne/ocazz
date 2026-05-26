@@ -15,8 +15,10 @@ function getUser() {
 function EmptyState({ icon, text, action }) {
   return (
     <div style={{ textAlign: "center", padding: "60px 24px", color: "var(--text-faint)" }}>
-      <div style={{ fontSize: 40, marginBottom: 12 }}>{icon}</div>
-      <p style={{ margin: "0 0 16px", fontSize: 15 }}>{text}</p>
+      <div style={{ width: 64, height: 64, background: "var(--bg-off)", border: "1px solid var(--border)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+        {icon}
+      </div>
+      <p style={{ margin: "0 0 20px", fontSize: 15 }}>{text}</p>
       {action}
     </div>
   );
@@ -134,7 +136,11 @@ function FavorisTab() {
   };
 
   if (loading) return <div style={{ padding: 32 }}>{[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: 110, marginBottom: 12 }} />)}</div>;
-  if (!favs.length) return <EmptyState icon="🚗" text="Vous n'avez pas encore de favoris." action={<Link to="/Marketplace" className="btn-primary" style={{ display: "inline-block", padding: "10px 24px", textDecoration: "none" }}>Parcourir les annonces</Link>} />;
+  if (!favs.length) return <EmptyState
+    icon={<svg width="28" height="28" fill="none" stroke="var(--text-faint)" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>}
+    text="Vous n'avez pas encore de favoris."
+    action={<Link to="/Marketplace" className="btn-primary" style={{ display: "inline-flex", padding: "10px 24px", textDecoration: "none" }}>Parcourir les annonces</Link>}
+  />;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -159,7 +165,11 @@ function MesAnnoncesTab() {
   };
 
   if (loading) return <div style={{ padding: 32 }}>{[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: 110, marginBottom: 12 }} />)}</div>;
-  if (!annonces.length) return <EmptyState icon="📋" text="Vous n'avez pas encore publié d'annonce." action={<Link to="/sell" className="btn-primary" style={{ display: "inline-block", padding: "10px 24px", textDecoration: "none" }}>Publier une annonce</Link>} />;
+  if (!annonces.length) return <EmptyState
+    icon={<svg width="28" height="28" fill="none" stroke="var(--text-faint)" viewBox="0 0 24 24" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>}
+    text="Vous n'avez pas encore publié d'annonce."
+    action={<Link to="/sell" className="btn-primary" style={{ display: "inline-flex", padding: "10px 24px", textDecoration: "none" }}>Publier une annonce</Link>}
+  />;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

@@ -33,11 +33,11 @@ class AuthController extends Controller
             'password'  => Hash::make($data['password']),
         ]);
 
-        $token = $user->createToken('auth-token')->plainTextToken;
+        try { $user->sendEmailVerificationNotification(); } catch (\Exception) {}
 
         return response()->json([
-            'user'  => $user,
-            'token' => $token,
+            'status'  => 'check_email',
+            'message' => 'Un lien de vérification a été envoyé à votre adresse email.',
         ], 201);
     }
 
@@ -60,7 +60,13 @@ class AuthController extends Controller
             ]);
         }
 
-        // Create a token for the user
+        if (! $user->hasVerifiedEmail()) {
+            return response()->json([
+                'status'  => 'email_not_verified',
+                'message' => 'Veuillez vérifier votre adresse email avant de vous connecter.',
+            ], 403);
+        }
+
         $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([

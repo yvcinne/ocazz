@@ -30,6 +30,7 @@ export default function Register() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [checkEmail, setCheckEmail] = useState(false);
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
@@ -52,10 +53,10 @@ export default function Register() {
     setErrors({});
     try {
       const res = await axiosClient.post("/register", form);
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-      const isAdmin = res.data.user?.role === "admin";
-      navigate(isAdmin ? "/admin" : "/", { replace: true });
+      if (res.data.status === "check_email") {
+        setCheckEmail(true);
+        return;
+      }
     } catch (err) {
       if (!err.response) {
         setErrors({
@@ -75,6 +76,30 @@ export default function Register() {
       setLoading(false);
     }
   };
+
+  if (checkEmail) {
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--bg-off)", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 16px" }}>
+        <div style={{ width: "100%", maxWidth: 480, textAlign: "center" }} className="anim-up">
+          <div style={{ width: 64, height: 64, background: "var(--accent-blue)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px" }}>
+            <svg width="32" height="32" fill="none" stroke="white" viewBox="0 0 24 24" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+          </div>
+          <h2 style={{ fontFamily: "Manrope,sans-serif", fontWeight: 800, fontSize: 22, color: "var(--text-primary)", marginBottom: 12 }}>Vérifiez votre boîte mail</h2>
+          <p style={{ color: "var(--text-muted)", fontSize: 15, marginBottom: 8 }}>
+            Un lien d'activation a été envoyé à <strong>{form.email}</strong>.
+          </p>
+          <p style={{ color: "var(--text-faint)", fontSize: 13, marginBottom: 28 }}>
+            Cliquez sur le lien dans l'email pour activer votre compte. Pensez à vérifier vos spams.
+          </p>
+          <Link to="/Login" style={{ color: "var(--accent-blue)", fontWeight: 600, textDecoration: "none", fontSize: 14 }}>
+            Retour à la connexion
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg-off)", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 16px" }}>
