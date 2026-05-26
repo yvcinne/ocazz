@@ -25,8 +25,7 @@ Marketplace fullstack pour l'achat et la vente de voitures d'occasion au Maroc, 
     - [Google OAuth 2.0](#122-google-oauth-20)
 13. [Service de prédiction IA](#13-service-de-prédiction-ia)
 14. [Chatbot Gemini](#14-chatbot-gemini)
-15. [Tests](#15-tests)
-16. [Déploiement](#16-déploiement)
+15. [Déploiement](#15-déploiement)
 
 ---
 
@@ -654,88 +653,7 @@ Le frontend consomme le stream SSE avec `EventSource` ou `fetch` en mode stream.
 
 ---
 
-## 15. Tests
-
-### Tests backend (PHPUnit)
-
-Les tests se trouvent dans `backend/tests/`.
-
-```bash
-cd backend
-php artisan test
-```
-
-**Suite de tests Feature/Auth :**
-
-| Fichier | Tests couverts |
-|---|---|
-| `AuthenticationTest.php` | Connexion réussie, mauvais mot de passe, déconnexion |
-| `RegistrationTest.php` | Inscription avec données valides |
-| `EmailVerificationTest.php` | Envoi du lien, vérification du hash signé |
-| `PasswordResetTest.php` | Envoi de l'email de reset, réinitialisation |
-
-**Lancer uniquement un groupe :**
-
-```bash
-php artisan test --testsuite=Feature
-php artisan test --testsuite=Unit
-php artisan test --filter=AuthenticationTest
-```
-
-**Configuration PHPUnit (`phpunit.xml`) :**
-
-- `APP_ENV=testing`
-- `CACHE_DRIVER=array` — pas de cache persistant
-- `MAIL_MAILER=array` — emails capturés en mémoire, non envoyés
-- `QUEUE_CONNECTION=sync` — jobs exécutés immédiatement
-- La base de données de test utilise `RefreshDatabase` (rollback après chaque test)
-
-> Par défaut les tests utilisent la même connexion MySQL que le dev. Pour isoler, décommentez dans `phpunit.xml` :
-> ```xml
-> <env name="DB_CONNECTION" value="sqlite"/>
-> <env name="DB_DATABASE" value=":memory:"/>
-> ```
-
-### Tests manuels (smoke tests)
-
-Après démarrage, vérifiez les points critiques suivants :
-
-**Inscription / Connexion email**
-1. Ouvrir http://localhost:3000/Register
-2. Créer un compte → vérifier la redirection vers `/`
-3. Ouvrir http://localhost:3000/Login → se connecter → vérifier token dans `localStorage`
-
-**Connexion Google OAuth**
-1. Renseigner `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET` dans `backend/.env`
-2. Cliquer "Continuer avec Google" sur `/Login`
-3. Sélectionner un compte Google → vérifier la redirection vers `/auth/callback` puis `/`
-4. Vérifier que `localStorage.token` et `localStorage.user` sont renseignés
-
-**Annonces**
-1. Aller sur http://localhost:3000/Marketplace → les annonces s'affichent
-2. Cliquer sur une annonce → la fiche s'ouvre avec les photos
-3. Connecté : aller sur `/sell` → créer une annonce avec photos
-
-**Estimation de prix**
-1. S'assurer que Flask tourne sur le port 5000
-2. Aller sur http://localhost:3000/Predict → remplir le formulaire → vérifier l'estimation
-
-**Chatbot**
-1. Ouvrir le widget chat (icône en bas de page)
-2. Envoyer un message → vérifier la réponse en streaming
-
-**Administration**
-1. Se connecter avec `admin@ocazz.ma` / `Admin@1234`
-2. Vérifier la redirection vers `/admin`
-3. Approuver / rejeter une annonce
-
-**Vérification email**
-1. En dev : `MAIL_MAILER=log` — ouvrir `backend/storage/logs/laravel.log` pour trouver le lien
-2. Cliquer le lien → vérifier que `email_verified_at` est mis à jour en base
-
----
-
-## 16. Déploiement
+## 15. Déploiement
 
 ### Variables à changer en production
 
