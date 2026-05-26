@@ -124,7 +124,7 @@ export default function Formlogin() {
             </div>
 
             <a
-                href={`${import.meta.env.VITE_BACKEND_URL}/api/auth/google`}
+                href={`${import.meta.env.VITE_BACKEND_URL}/api/auth/google?intent=login`}
                 style={{
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
                     width: "100%", padding: "10px 16px", border: "1px solid var(--border)",

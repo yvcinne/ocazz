@@ -17,6 +17,7 @@ import AdminUsers from "../pages/admin/AdminUsers";
 import Contact from "../pages/static/Contact";
 import FAQ from "../pages/static/FAQ";
 import GoogleAuthCallback from "../pages/GoogleAuthCallback";
+import GoogleAuthComplete from "../pages/GoogleAuthComplete";
 import { About, HowItWorks, EspaceRevendeur, Conditions, Confidentialite, CentreAide, Blog } from "../pages/static/StaticPages";
 
 export const User_Dashboard = '/User/dashboard';
@@ -38,6 +39,7 @@ export const router = createBrowserRouter([
             { path: "/forgot-password",  element: <ForgotPassword /> },
             { path: "/reset-password",   element: <ResetPassword /> },
             { path: "/auth/callback",    element: <GoogleAuthCallback /> },
+            { path: "/auth/complete",    element: <GoogleAuthComplete /> },
             { path: "/Marketplace",    element: <Marketplace /> },
             { path: "/Predict",        element: <Predict /> },
             { path: "/sell",           element: <SellYourCar /> },

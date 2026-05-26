@@ -28,8 +28,9 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
 // Google OAuth
-Route::get('/auth/google',          [SocialAuthController::class, 'redirectToGoogle']);
-Route::get('/auth/google/callback', [SocialAuthController::class, 'handleGoogleCallback']);
+Route::get('/auth/google',           [SocialAuthController::class, 'redirectToGoogle']);
+Route::get('/auth/google/callback',  [SocialAuthController::class, 'handleGoogleCallback']);
+Route::post('/auth/google/complete', [SocialAuthController::class, 'completeRegistration']);
 
 // Password reset
 Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink']);

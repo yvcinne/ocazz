@@ -24,6 +24,16 @@ export default function Login() {
 
         {/* Card */}
         <div style={{ background: "var(--bg-white)", border: "1px solid var(--border)", padding: "40px 36px" }}>
+          {params.get("error") === "email_exists" && (
+            <div style={{ background: "#FFF5F5", border: "1px solid var(--error)", borderLeft: "4px solid var(--error)", padding: "12px 16px", marginBottom: 20, display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <svg width="16" height="16" fill="none" stroke="var(--error)" viewBox="0 0 24 24" strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span style={{ color: "var(--error)", fontSize: 14 }}>
+                Un compte existe déjà avec cette adresse Gmail. Connectez-vous avec votre mot de passe.
+              </span>
+            </div>
+          )}
           {params.get("reset") === "1" && (
             <div style={{ background: "#E8F5E9", border: "1px solid var(--success)", borderLeft: "4px solid var(--success)", padding: "12px 16px", marginBottom: 20, display: "flex", gap: 10, alignItems: "center" }}>
               <svg width="16" height="16" fill="none" stroke="var(--success)" viewBox="0 0 24 24" strokeWidth={2} style={{ flexShrink: 0 }}>

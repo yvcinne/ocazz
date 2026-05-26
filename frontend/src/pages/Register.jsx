@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { axiosClient } from "../api/axios";
 
 const Field = ({ label, type = "text", placeholder, optional, value, onChange, error }) => (
@@ -25,6 +25,7 @@ const Field = ({ label, type = "text", placeholder, optional, value, onChange, e
 
 export default function Register() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [form, setForm] = useState({ name: "", last_name: "", email: "", phone: "", password: "", password_confirmation: "" });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -99,6 +100,17 @@ export default function Register() {
 
         {/* Card */}
         <div style={{ background: "var(--bg-white)", border: "1px solid var(--border)", padding: "40px 36px" }}>
+          {searchParams.get("error") === "account_exists" && (
+            <div style={{ background: "#FFF5F5", border: "1px solid var(--error)", borderLeft: "4px solid var(--error)", padding: "12px 16px", marginBottom: 20, display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <svg width="16" height="16" fill="none" stroke="var(--error)" viewBox="0 0 24 24" strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span style={{ color: "var(--error)", fontSize: 14 }}>
+                Un compte existe déjà avec cette adresse Gmail.{" "}
+                <Link to="/Login" style={{ color: "var(--error)", fontWeight: 700, textDecoration: "underline" }}>Se connecter</Link>
+              </span>
+            </div>
+          )}
           {errors.general && (
             <div style={{ background: "#FFF5F5", border: "1px solid var(--error)", borderLeft: "4px solid var(--error)", padding: "12px 16px", marginBottom: 20, display: "flex", gap: 10, alignItems: "center" }}>
               <svg width="16" height="16" fill="none" stroke="var(--error)" viewBox="0 0 24 24" strokeWidth={2} style={{ flexShrink: 0 }}>
@@ -207,7 +219,7 @@ export default function Register() {
           </div>
 
           <a
-            href={`${import.meta.env.VITE_BACKEND_URL}/api/auth/google`}
+            href={`${import.meta.env.VITE_BACKEND_URL}/api/auth/google?intent=register`}
             style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
               width: "100%", padding: "10px 16px", border: "1px solid var(--border)",
