@@ -1,6 +1,6 @@
 # ocazz.ma — Plateforme marocaine de vente de véhicules d'occasion
 
-Marketplace fullstack pour l'achat et la vente de voitures d'occasion au Maroc, avec estimation de prix par IA, messagerie temps réel, chatbot Gemini et authentification Google OAuth.
+Marketplace fullstack pour l'achat et la vente de voitures d'occasion au Maroc, avec estimation de prix par IA, messagerie temps réel, chatbot assistant et authentification Google OAuth.
 
 ## Stack technique
 
@@ -9,8 +9,8 @@ Marketplace fullstack pour l'achat et la vente de voitures d'occasion au Maroc, 
 | Backend API | Laravel 10 · PHP 8.1+ · Sanctum · Socialite |
 | Frontend | React 19 · Vite · shadcn/ui |
 | Base de données | MySQL 8+ / MariaDB 10.6+ |
-| Prédiction IA | Python 3.10+ · Flask · scikit-learn |
-| Chatbot | Google Gemini 2.0 Flash Lite (SSE) |
+| Prédiction IA | Python 3.10+ · Flask · scikit-learn (Random Forest) |
+| Chatbot | Groq — Llama 3.3 70B (streaming SSE) |
 | Temps réel | Laravel Reverb (WebSocket) |
 
 ## Prérequis
@@ -40,7 +40,7 @@ php artisan storage:link
 ```bash
 cd frontend
 npm install
-# Créer frontend/.env avec : VITE_BACKEND_URL=http://localhost:8000
+cp .env.example .env   # puis renseigner VITE_BACKEND_URL
 ```
 
 **Service de prédiction Flask**
@@ -49,7 +49,6 @@ npm install
 cd prediction/api
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-# Entraîner le modèle (optionnel) :
 python generate_pipeline.py   # requiert prediction/data/data.csv
 ```
 
@@ -58,35 +57,36 @@ python generate_pipeline.py   # requiert prediction/data/data.csv
 `backend/.env` — clés essentielles :
 
 ```env
-APP_URL=http://localhost:8000
-FRONTEND_URL=http://localhost:3000
+APP_URL=http://127.0.0.1:8000
 
 DB_DATABASE=ocazz
 DB_USERNAME=root
 DB_PASSWORD=your_password
 
-MAIL_MAILER=log                 # remplacer par smtp en production
+MAIL_MAILER=log
 MAIL_FROM_ADDRESS=noreply@ocazz.ma
 
-GEMINI_API_KEY=                 # aistudio.google.com/apikey
+GROQ_API_KEY=                   # console.groq.com
 PREDICTION_SERVICE_URL=http://127.0.0.1:5000
 
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
-GOOGLE_REDIRECT_URI=http://localhost:8000/api/auth/google/callback
+GOOGLE_REDIRECT_URI=http://127.0.0.1:8000/api/auth/google/callback
 ```
 
 `frontend/.env` :
 
 ```env
-VITE_BACKEND_URL=http://localhost:8000
+VITE_BACKEND_URL=http://127.0.0.1:8000
 ```
+
+> **Note :** utiliser `127.0.0.1` plutôt que `localhost` évite les conflits IPv4/IPv6 lorsque d'autres serveurs tournent sur le même port.
 
 ## Démarrage
 
 ```bash
 # Terminal 1 — API Laravel
-cd backend && php artisan serve
+cd backend && php artisan serve --host=127.0.0.1 --port=8000
 
 # Terminal 2 — Frontend React
 cd frontend && npm run dev
@@ -98,8 +98,6 @@ cd prediction/api && source .venv/bin/activate && python app.py
 cd backend && php artisan reverb:start
 ```
 
-Application disponible sur **http://localhost:3000**
-
 ## Comptes par défaut
 
 | Rôle | Email | Mot de passe |
@@ -108,16 +106,98 @@ Application disponible sur **http://localhost:3000**
 
 ## Fonctionnalités
 
-- Marketplace avec filtres (marque, prix, carburant, kilométrage…)
-- Dépôt d'annonce multi-étapes avec upload de photos
+- Marketplace avec filtres (marque, carburant, boîte, prix, kilométrage, année…)
+- Dépôt d'annonce multi-étapes avec upload de photos (max 8)
+- Chatbot assistant (français / darija, streaming SSE) avec flux de vente guidé
 - Estimation de prix par IA (Random Forest, marché marocain)
 - Messagerie privée temps réel entre acheteur et vendeur
-- Chatbot Gemini (français / darija, streaming SSE)
 - Auth email/password + Google OAuth 2.0
 - Panneau admin : modération des annonces et des utilisateurs
+
+## Structure du projet
+
+```
+PP/
+├── backend/                        # API Laravel
+│   ├── app/
+│   │   ├── Http/
+│   │   │   ├── Controllers/
+│   │   │   │   ├── AnnonceController.php     # CRUD annonces + upload images
+│   │   │   │   ├── ChatController.php        # Chatbot SSE (Groq / Llama)
+│   │   │   │   ├── AdminController.php       # Modération admin
+│   │   │   │   ├── ConversationController.php
+│   │   │   │   ├── MessageController.php     # Messagerie temps réel
+│   │   │   │   ├── FavoriteController.php
+│   │   │   │   ├── ReviewController.php
+│   │   │   │   ├── PredictionController.php  # Proxy vers Flask
+│   │   │   │   ├── UserController.php
+│   │   │   │   └── Api/
+│   │   │   │       ├── AuthController.php
+│   │   │   │       ├── SocialAuthController.php   # Google OAuth
+│   │   │   │       └── PasswordResetController.php
+│   │   │   └── Middleware/
+│   │   │       └── AdminMiddleware.php
+│   │   ├── Models/
+│   │   │   ├── Annonce.php
+│   │   │   ├── ChatbotSession.php   # Historique conversations chatbot
+│   │   │   ├── Conversation.php
+│   │   │   ├── Image.php
+│   │   │   ├── Message.php
+│   │   │   ├── Favorite.php
+│   │   │   ├── Review.php
+│   │   │   └── User.php
+│   │   └── Events/
+│   │       └── MessageSent.php      # Broadcast WebSocket
+│   ├── config/
+│   │   └── cors.php                 # CORS : autorise tous les ports localhost
+│   ├── database/
+│   │   └── migrations/              # 15 migrations
+│   └── routes/
+│       ├── api.php
+│       └── channels.php             # WebSocket channels
+│
+├── frontend/                        # SPA React + Vite
+│   └── src/
+│       ├── api/
+│       │   └── axios.js             # Instance Axios avec token Bearer
+│       ├── components/
+│       │   ├── ChatWidget.jsx       # Chatbot flottant (SSE, flux vente)
+│       │   └── Formlogin.jsx
+│       ├── layouts/
+│       │   ├── Layout.jsx           # Navbar, footer, routes publiques
+│       │   └── AdminLayout.jsx
+│       ├── pages/
+│       │   ├── Acceuil.jsx          # Homepage + recherche + marques
+│       │   ├── Marketplace.jsx      # Listings avec filtres + pagination
+│       │   ├── CarDetails.jsx       # Fiche véhicule + messagerie
+│       │   ├── SellYourCar.jsx      # Formulaire dépôt annonce (2 étapes)
+│       │   ├── Predict.jsx          # Estimation de prix IA
+│       │   ├── Messages.jsx         # Messagerie temps réel
+│       │   ├── UserDashboard.jsx    # Profil + annonces utilisateur
+│       │   ├── Login.jsx / Register.jsx
+│       │   ├── GoogleAuthCallback.jsx / GoogleAuthComplete.jsx
+│       │   ├── ForgotPassword.jsx / ResetPassword.jsx
+│       │   ├── admin/
+│       │   │   ├── AdminDashboard.jsx
+│       │   │   ├── AdminAnnonces.jsx
+│       │   │   └── AdminUsers.jsx
+│       │   └── static/              # Pages CGU, FAQ, Contact…
+│       └── router/
+│           └── index.jsx            # React Router v6
+│
+└── prediction/                      # Service IA Python
+    ├── api/
+    │   ├── app.py                   # API Flask (endpoint /predict)
+    │   ├── generate_pipeline.py     # Entraînement et export du modèle
+    │   └── requirements.txt
+    ├── data/                        # Dataset marché marocain (gitignored)
+    ├── models/                      # Notebooks comparaison modèles
+    ├── preparing/                   # Notebooks nettoyage / exploration
+    └── multiple_scrapers/           # Scrapers Avito / Kifal
+```
 
 ## Google OAuth — configuration
 
 1. [console.cloud.google.com](https://console.cloud.google.com/) → Credentials → OAuth 2.0 Client ID
-2. Authorized redirect URI : `http://localhost:8000/api/auth/google/callback`
+2. Authorized redirect URI : `http://127.0.0.1:8000/api/auth/google/callback`
 3. Copiez Client ID et Client Secret dans `backend/.env`
