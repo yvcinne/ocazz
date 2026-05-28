@@ -100,7 +100,7 @@ export default function Marketplace() {
   const navigate = useNavigate();
 
   const [search,   setSearch]   = useState(searchParams.get("q") || "");
-  const [brand,    setBrand]    = useState("Toutes");
+  const [brand,    setBrand]    = useState(searchParams.get("make") || "Toutes");
   const [fuel,     setFuel]     = useState("Tous");
   const [trans,    setTrans]    = useState("Toutes");
   const [cond,     setCond]     = useState("Tous");

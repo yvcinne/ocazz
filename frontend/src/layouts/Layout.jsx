@@ -23,7 +23,7 @@ const FOOTER_PATHS = {
 
 const NAV = [
   { label: "Accueil",              path: "/" },
-  { label: "Acheter une voiture",  path: "/Marketplace" },
+  { label: "Marketplace",          path: "/Marketplace" },
   { label: "Vendre une voiture",   path: "/sell" },
   { label: "Estimation de prix",   path: "/Predict" },
 ];

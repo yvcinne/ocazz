@@ -53,7 +53,9 @@ Sois concis, utile et amical. Si une question sort de ce périmètre, réponds p
 
     private function buildSystemPrompt(ChatbotSession $session): string
     {
-        return self::SYSTEM . $this->buildDbContext();
+        $system = self::SYSTEM . $this->buildDbContext();
+        $system .= "\n\nFLUX VENTE — ne déclenche ce flux QUE si l'utilisateur dit EXPLICITEMENT qu'il veut vendre sa voiture (ex : \"je veux vendre\", \"publier une annonce\", \"mettre en vente\"). Pour toute autre question (même sur la vente en général), réponds normalement SANS déclencher ce flux.\n\nSi et seulement si ce flux est déclenché, collecte ces informations une par une : marque (uniquement parmi : Audi, BMW, Citroën, Dacia, Fiat, Ford, Honda, Hyundai, Kia, Land Rover, Mercedes, Nissan, Opel, Peugeot, Renault, Seat, Skoda, Toyota, Volkswagen, Volvo, Autre), modèle, année, kilométrage (nombre uniquement), carburant (Diesel / Essence / Hybride / Electrique / LPG), boîte de vitesse (Manuelle / Automatique), état (Neuf / Excellent / Très bon / Bon / Correct), prix en MAD (nombre uniquement), description courte. La puissance fiscale est optionnelle. Une fois TOUTES les informations recueillies, donne un récapitulatif puis termine ton message par exactement ce marqueur sur une nouvelle ligne (rien après) :\n[SELL_REDIRECT:{\"brand\":\"MARQUE\",\"model\":\"MODELE\",\"model_year\":\"ANNEE\",\"mileage\":\"KILOMETRAGE\",\"fuel_type\":\"CARBURANT\",\"transmission\":\"BOITE\",\"car_condition\":\"ETAT\",\"fiscal_power\":\"PUISSANCE_OU_VIDE\",\"price\":\"PRIX\",\"description\":\"DESCRIPTION\"}]";
+        return $system;
     }
 
     // Build OpenAI-style messages array from session history + new message
@@ -191,11 +193,16 @@ Sois concis, utile et amical. Si une question sort de ce périmètre, réponds p
                 }
 
                 $fullReply  = $this->extractFullReply($sseBuffer);
-                $askLead    = str_contains($fullReply, '[FORM:contact]');
-                $cleanReply = trim(str_replace('[FORM:contact]', '', $fullReply));
+                $cleanReply = trim($fullReply);
 
-                if ($askLead) {
-                    echo "data: {\"type\":\"ask_lead\"}\n\n";
+                $sellRedirectData = null;
+                if (preg_match('/\[SELL_REDIRECT:(\{[\s\S]*?\})\]/', $fullReply, $m)) {
+                    $sellRedirectData = json_decode($m[1], true);
+                    $cleanReply = trim(preg_replace('/\[SELL_REDIRECT:[\s\S]*?\]/', '', $cleanReply));
+                }
+
+                if ($sellRedirectData) {
+                    echo "data: " . json_encode(['type' => 'sell_redirect', 'data' => $sellRedirectData]) . "\n\n";
                     $safeFlush();
                 }
 

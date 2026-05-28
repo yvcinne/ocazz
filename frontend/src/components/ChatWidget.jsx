@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const API_STREAM = `${import.meta.env.VITE_BACKEND_URL}/api/chat/stream`;
 const WELCOME    = { role: "model", text: "Bonjour ! Je suis l'assistant ocazz.ma.\nComment puis-je vous aider aujourd'hui ?" };
@@ -23,6 +23,33 @@ function BotAvatar({ size = 28 }) {
       <svg width={size * 0.52} height={size * 0.52} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>
       </svg>
+    </div>
+  );
+}
+
+function SellConfirm({ onYes, onNo }) {
+  return (
+    <div style={{ display: "flex", gap: 8, marginTop: 10, paddingLeft: 33 }}>
+      <button
+        onClick={onYes}
+        style={{
+          padding: "8px 16px", borderRadius: 10, border: "none", cursor: "pointer",
+          background: "linear-gradient(135deg, #3B82F6 0%, #6366F1 100%)",
+          color: "#fff", fontSize: 13, fontWeight: 600, fontFamily: "inherit",
+        }}
+      >
+        Publier maintenant
+      </button>
+      <button
+        onClick={onNo}
+        style={{
+          padding: "8px 16px", borderRadius: 10, cursor: "pointer",
+          background: "#fff", border: "1px solid #E2E8F0",
+          color: "#64748B", fontSize: 13, fontWeight: 600, fontFamily: "inherit",
+        }}
+      >
+        Plus tard
+      </button>
     </div>
   );
 }
@@ -108,6 +135,7 @@ function LeadForm({ onSubmit, sending }) {
 
 export default function ChatWidget() {
   const { pathname }      = useLocation();
+  const navigate          = useNavigate();
   const btnBottom         = pathname === "/messages" ? 108 : 28;
   const sessionId         = useRef(getSessionId());
 
@@ -115,6 +143,7 @@ export default function ChatWidget() {
   const [msgs, setMsgs]           = useState([WELCOME]);
   const [input, setInput]         = useState("");
   const [streaming, setStreaming] = useState(false);
+  const [pendingSell, setPendingSell] = useState(null);
 
   const msgsRef      = useRef(null);
   const inputRef     = useRef(null);
@@ -183,6 +212,11 @@ export default function ChatWidget() {
             const chunk = JSON.parse(raw);
 
             // Custom events from backend
+            if (chunk.type === "sell_redirect") {
+              setPendingSell(chunk.data);
+              setMsgs(ms => [...ms, { role: "model", text: "Souhaitez-vous publier cette annonce maintenant ?", confirmSell: true }]);
+              continue;
+            }
             if (chunk.type === "error") {
               setMsgs(ms => [...ms.slice(0, -1), { role: "error", text: chunk.text }]);
               continue;
@@ -190,14 +224,10 @@ export default function ChatWidget() {
 
             const delta = chunk.choices?.[0]?.delta?.content ?? "";
             if (delta) {
-              // Strip [FORM:contact] marker if it slips through in text
-              const clean = delta.replace(/\[FORM:contact\]/g, "");
-              if (clean) {
-                setMsgs(ms => {
-                  const last = ms[ms.length - 1];
-                  return [...ms.slice(0, -1), { ...last, text: last.text + clean }];
-                });
-              }
+              setMsgs(ms => {
+                const last = ms[ms.length - 1];
+                return [...ms.slice(0, -1), { ...last, text: last.text + delta }];
+              });
             }
           } catch { /* skip malformed chunk */ }
         }
@@ -221,10 +251,25 @@ export default function ChatWidget() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
   };
 
+  const handleSellYes = () => {
+    if (!pendingSell) return;
+    localStorage.setItem("chatbot_sell_prefill", JSON.stringify(pendingSell));
+    setPendingSell(null);
+    const token = localStorage.getItem("token");
+    setOpen(false);
+    navigate(token ? "/sell" : "/Login?redirect=/sell");
+  };
+
+  const handleSellNo = () => {
+    setPendingSell(null);
+    setMsgs(ms => [...ms, { role: "model", text: "Pas de problème ! Vous pourrez publier votre annonce quand vous le souhaitez depuis la page « Vendre »." }]);
+  };
+
   const clearChat = () => {
     if (streaming) { abortRef.current?.abort(); setStreaming(false); }
     setMsgs([WELCOME]);
     setInput("");
+    setPendingSell(null);
     // New session on clear
     const newId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36);
     localStorage.setItem("chatbot_session_id", newId);
@@ -368,6 +413,7 @@ export default function ChatWidget() {
               const isEmpty = m.role === "model" && m.text === "" && i === msgs.length - 1 && awaitingFirst;
               if (isEmpty) return null;
               const isLast = i === msgs.length - 1;
+              const displayText = m.text.replace(/\[SELL_REDIRECT:[\s\S]*/, "").trimEnd();
               return (
                 <div key={i}>
                   <div style={{ display: "flex", flexDirection: isUser ? "row-reverse" : "row", alignItems: "flex-end", gap: 7 }}>
@@ -388,9 +434,12 @@ export default function ChatWidget() {
                         : "0 1px 3px rgba(0,0,0,0.05)",
                       fontFamily: "inherit",
                     }}>
-                      {m.text}
+                      {displayText}
                     </div>
                   </div>
+                  {m.confirmSell && isLast && pendingSell && (
+                    <SellConfirm onYes={handleSellYes} onNo={handleSellNo} />
+                  )}
                 </div>
               );
             })}

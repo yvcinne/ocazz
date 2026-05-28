@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { axiosClient } from "../api/axios";
 
@@ -70,17 +70,30 @@ const Inp = ({ label, type = "text", placeholder = "", value, onChange, error, o
   </Field>
 );
 
+const DEFAULT_FORM = { brand: "", model: "", model_year: "", mileage: "", fuel_type: "", transmission: "", car_condition: "", fiscal_power: "", price: "", description: "" };
+
+function readPrefill() {
+  try {
+    const raw = localStorage.getItem("chatbot_sell_prefill");
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+
 export default function SellYourCar() {
-  const [step, setStep]           = useState(1);
+  const [form, setForm] = useState(() => {
+    const p = readPrefill();
+    return p ? { ...DEFAULT_FORM, ...p } : { ...DEFAULT_FORM };
+  });
+
+  const [step, setStep] = useState(1);
+
+  useEffect(() => { localStorage.removeItem("chatbot_sell_prefill"); }, []);
+
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading]     = useState(false);
   const [errors, setErrors]       = useState({});
   const [photos, setPhotos]       = useState([]); // [{file, preview}]
-  const [form, setForm] = useState({
-    brand: "", model: "", model_year: "", mileage: "",
-    fuel_type: "", transmission: "", car_condition: "", fiscal_power: "",
-    price: "", description: "",
-  });
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
@@ -170,10 +183,10 @@ export default function SellYourCar() {
           </div>
           <h2 style={{ margin: "0 0 12px" }}>Annonce soumise !</h2>
           <p style={{ color: "var(--text-muted)", margin: "0 0 32px", lineHeight: "24px" }}>
-            Notre équipe examinera votre annonce dans les 24h. Vous serez notifié par email dès sa publication.
+            Votre annonce est en attente de validation. Elle sera publiée sur le site dès qu'un administrateur l'aura approuvée, généralement sous 24h.
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-            <button onClick={() => { setSubmitted(false); setStep(1); setPhotos([]); setForm({ brand:"",model:"",model_year:"",mileage:"",fuel_type:"",transmission:"",car_condition:"",fiscal_power:"",price:"",description:"" }); }}
+            <button onClick={() => { setSubmitted(false); setStep(1); setPhotos([]); setForm({ ...DEFAULT_FORM }); }}
               className="btn-secondary">
               Nouvelle annonce
             </button>
