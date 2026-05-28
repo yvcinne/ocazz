@@ -52,6 +52,7 @@ Route::get('annonces/{annonce}', [AnnonceController::class, 'show']);
 // AI chatbot (public — guests can use it too)
 Route::post('chat', [ChatController::class, 'chat']);
 Route::post('chat/stream', [ChatController::class, 'stream']);
+Route::post('chat/lead', [ChatController::class, 'saveLead']);
 
 /*
 |--------------------------------------------------------------------------

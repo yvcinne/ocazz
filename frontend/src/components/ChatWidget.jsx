@@ -1,8 +1,18 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
-const API = `${import.meta.env.VITE_BACKEND_URL}/api/chat/stream`;
-const WELCOME = { role: "model", text: "Bonjour ! Je suis l'assistant ocazz.ma.\nComment puis-je vous aider aujourd'hui ?" };
+const API_STREAM = `${import.meta.env.VITE_BACKEND_URL}/api/chat/stream`;
+const API_LEAD   = `${import.meta.env.VITE_BACKEND_URL}/api/chat/lead`;
+const WELCOME    = { role: "model", text: "Bonjour ! Je suis l'assistant ocazz.ma.\nComment puis-je vous aider aujourd'hui ?" };
+
+function getSessionId() {
+  let id = localStorage.getItem("chatbot_session_id");
+  if (!id) {
+    id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem("chatbot_session_id", id);
+  }
+  return id;
+}
 
 function BotAvatar({ size = 28 }) {
   return (
@@ -39,47 +49,104 @@ function TypingDots() {
   );
 }
 
+function LeadForm({ onSubmit, sending }) {
+  const [name, setName]   = useState("");
+  const [phone, setPhone] = useState("");
+
+  const handle = (e) => {
+    e.preventDefault();
+    if (name.trim() && phone.trim()) onSubmit(name.trim(), phone.trim());
+  };
+
+  return (
+    <form onSubmit={handle} style={{
+      marginTop: 8, padding: "12px 14px",
+      background: "#EFF6FF", border: "1px solid #BFDBFE",
+      borderRadius: 12, display: "flex", flexDirection: "column", gap: 8,
+    }}>
+      <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#1D4ED8" }}>
+        Laissez vos coordonnées
+      </p>
+      <input
+        type="text"
+        placeholder="Votre prénom"
+        value={name}
+        onChange={e => setName(e.target.value)}
+        required
+        style={{
+          padding: "8px 10px", fontSize: 13, borderRadius: 8,
+          border: "1px solid #BFDBFE", outline: "none", background: "#fff",
+          fontFamily: "inherit",
+        }}
+      />
+      <input
+        type="tel"
+        placeholder="Numéro de téléphone"
+        value={phone}
+        onChange={e => setPhone(e.target.value)}
+        required
+        style={{
+          padding: "8px 10px", fontSize: 13, borderRadius: 8,
+          border: "1px solid #BFDBFE", outline: "none", background: "#fff",
+          fontFamily: "inherit",
+        }}
+      />
+      <button
+        type="submit"
+        disabled={sending || !name.trim() || !phone.trim()}
+        style={{
+          padding: "8px 0", borderRadius: 8, border: "none",
+          background: sending ? "#93C5FD" : "linear-gradient(135deg, #3B82F6 0%, #6366F1 100%)",
+          color: "#fff", fontSize: 13, fontWeight: 600, cursor: sending ? "default" : "pointer",
+          fontFamily: "inherit",
+        }}
+      >
+        {sending ? "Envoi…" : "Envoyer"}
+      </button>
+    </form>
+  );
+}
+
 export default function ChatWidget() {
-  const { pathname } = useLocation();
-  const btnBottom = pathname === "/messages" ? 108 : 28;
+  const { pathname }      = useLocation();
+  const btnBottom         = pathname === "/messages" ? 108 : 28;
+  const sessionId         = useRef(getSessionId());
+
   const [open, setOpen]           = useState(false);
   const [msgs, setMsgs]           = useState([WELCOME]);
   const [input, setInput]         = useState("");
   const [streaming, setStreaming] = useState(false);
+  const [leadForm, setLeadForm]   = useState(false);
+  const [leadSent, setLeadSent]   = useState(false);
+  const [leadSending, setLeadSending] = useState(false);
+
   const msgsRef  = useRef(null);
   const inputRef = useRef(null);
   const abortRef = useRef(null);
 
   useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 150);
-    }
+    if (open) setTimeout(() => inputRef.current?.focus(), 150);
   }, [open]);
 
   useEffect(() => {
-    if (msgsRef.current) {
-      msgsRef.current.scrollTop = msgsRef.current.scrollHeight;
-    }
-  }, [msgs]);
+    if (msgsRef.current) msgsRef.current.scrollTop = msgsRef.current.scrollHeight;
+  }, [msgs, leadForm, leadSent]);
 
   const send = async () => {
     const text = input.trim();
     if (!text || streaming) return;
 
-    const history = msgs
-      .filter(m => m.role === "user" || m.role === "model")
-      .map(m => ({ role: m.role, text: m.text }));
-
     setMsgs(ms => [...ms, { role: "user", text }, { role: "model", text: "" }]);
     setInput("");
     setStreaming(true);
+    setLeadForm(false);
 
     const ctrl = new AbortController();
     abortRef.current = ctrl;
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(API, {
+      const res = await fetch(API_STREAM, {
         method: "POST",
         signal: ctrl.signal,
         headers: {
@@ -87,7 +154,7 @@ export default function ChatWidget() {
           "Accept": "text/event-stream",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ message: text, history }),
+        body: JSON.stringify({ message: text, session_id: sessionId.current }),
       });
 
       if (!res.ok) throw new Error("api_error");
@@ -108,12 +175,20 @@ export default function ChatWidget() {
           if (!raw || raw === "[DONE]") continue;
           try {
             const chunk = JSON.parse(raw);
+
+            // Custom event: show lead form
+            if (chunk.type === "ask_lead") { setLeadForm(true); continue; }
+
             const delta = chunk.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
             if (delta) {
-              setMsgs(ms => {
-                const last = ms[ms.length - 1];
-                return [...ms.slice(0, -1), { ...last, text: last.text + delta }];
-              });
+              // Strip [FORM:contact] marker if it slips through in text
+              const clean = delta.replace(/\[FORM:contact\]/g, "");
+              if (clean) {
+                setMsgs(ms => {
+                  const last = ms[ms.length - 1];
+                  return [...ms.slice(0, -1), { ...last, text: last.text + clean }];
+                });
+              }
             }
           } catch { /* skip malformed chunk */ }
         }
@@ -133,6 +208,29 @@ export default function ChatWidget() {
     }
   };
 
+  const submitLead = async (name, phone) => {
+    setLeadSending(true);
+    try {
+      const token = localStorage.getItem("token");
+      await fetch(API_LEAD, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ session_id: sessionId.current, name, phone }),
+      });
+      setLeadSent(true);
+      setLeadForm(false);
+      setMsgs(ms => [...ms, {
+        role: "model",
+        text: `Merci ${name} ! Un conseiller vous contactera au ${phone} très prochainement. 😊`,
+      }]);
+    } catch {
+      setLeadSending(false);
+    }
+  };
+
   const handleKey = e => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
   };
@@ -141,11 +239,18 @@ export default function ChatWidget() {
     if (streaming) { abortRef.current?.abort(); setStreaming(false); }
     setMsgs([WELCOME]);
     setInput("");
+    setLeadForm(false);
+    setLeadSent(false);
+    setLeadSending(false);
+    // New session on clear
+    const newId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem("chatbot_session_id", newId);
+    sessionId.current = newId;
   };
 
-  const lastMsg = msgs[msgs.length - 1];
+  const lastMsg      = msgs[msgs.length - 1];
   const awaitingFirst = streaming && lastMsg?.role === "model" && lastMsg?.text === "";
-  const canSend = input.trim().length > 0 && !streaming;
+  const canSend      = input.trim().length > 0 && !streaming;
 
   return (
     <>
@@ -221,7 +326,6 @@ export default function ChatWidget() {
             background: "linear-gradient(135deg, #1E3A5F 0%, #2563EB 100%)",
             display: "flex", alignItems: "center", gap: 11, flexShrink: 0,
           }}>
-            {/* Bot avatar in header */}
             <div style={{
               width: 42, height: 42, borderRadius: "50%", flexShrink: 0,
               background: "rgba(255,255,255,0.15)",
@@ -243,7 +347,6 @@ export default function ChatWidget() {
               </div>
             </div>
 
-            {/* Clear button */}
             {msgs.length > 1 && (
               <button
                 onClick={clearChat}
@@ -253,8 +356,7 @@ export default function ChatWidget() {
                   borderRadius: 8, padding: "5px 8px", cursor: "pointer",
                   color: "rgba(255,255,255,0.75)", fontSize: 11, fontFamily: "Manrope,sans-serif",
                   fontWeight: 600, display: "flex", alignItems: "center", gap: 4,
-                  transition: "background 0.15s",
-                  flexShrink: 0,
+                  transition: "background 0.15s", flexShrink: 0,
                 }}
                 onMouseOver={e => e.currentTarget.style.background = "rgba(255,255,255,0.22)"}
                 onMouseOut={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"}
@@ -282,29 +384,36 @@ export default function ChatWidget() {
               const isError = m.role === "error";
               const isEmpty = m.role === "model" && m.text === "" && i === msgs.length - 1 && awaitingFirst;
               if (isEmpty) return null;
+              const isLast = i === msgs.length - 1;
               return (
-                <div key={i} style={{ display: "flex", flexDirection: isUser ? "row-reverse" : "row", alignItems: "flex-end", gap: 7 }}>
-                  {!isUser && <BotAvatar size={26} />}
-                  <div style={{
-                    maxWidth: "76%",
-                    padding: "10px 14px",
-                    fontSize: 13.5, lineHeight: "21px",
-                    whiteSpace: "pre-wrap",
-                    borderRadius: isUser ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                    background: isUser
-                      ? "linear-gradient(135deg, #3B82F6 0%, #6366F1 100%)"
-                      : isError
-                        ? "#FEF2F2"
-                        : "#fff",
-                    color: isUser ? "#fff" : isError ? "#DC2626" : "#1E293B",
-                    border: isUser ? "none" : `1px solid ${isError ? "#FECACA" : "#E2E8F0"}`,
-                    boxShadow: isUser
-                      ? "0 2px 10px rgba(99,102,241,0.3)"
-                      : "0 1px 3px rgba(0,0,0,0.05)",
-                    fontFamily: "inherit",
-                  }}>
-                    {m.text}
+                <div key={i}>
+                  <div style={{ display: "flex", flexDirection: isUser ? "row-reverse" : "row", alignItems: "flex-end", gap: 7 }}>
+                    {!isUser && <BotAvatar size={26} />}
+                    <div style={{
+                      maxWidth: "76%",
+                      padding: "10px 14px",
+                      fontSize: 13.5, lineHeight: "21px",
+                      whiteSpace: "pre-wrap",
+                      borderRadius: isUser ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                      background: isUser
+                        ? "linear-gradient(135deg, #3B82F6 0%, #6366F1 100%)"
+                        : isError ? "#FEF2F2" : "#fff",
+                      color: isUser ? "#fff" : isError ? "#DC2626" : "#1E293B",
+                      border: isUser ? "none" : `1px solid ${isError ? "#FECACA" : "#E2E8F0"}`,
+                      boxShadow: isUser
+                        ? "0 2px 10px rgba(99,102,241,0.3)"
+                        : "0 1px 3px rgba(0,0,0,0.05)",
+                      fontFamily: "inherit",
+                    }}>
+                      {m.text}
+                    </div>
                   </div>
+                  {/* Lead form appears under the last bot message that triggered it */}
+                  {!isUser && isLast && leadForm && !leadSent && (
+                    <div style={{ paddingLeft: 33 }}>
+                      <LeadForm onSubmit={submitLead} sending={leadSending} />
+                    </div>
+                  )}
                 </div>
               );
             })}
