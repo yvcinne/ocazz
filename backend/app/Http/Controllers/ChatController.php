@@ -53,13 +53,7 @@ Sois concis, utile et amical. Si une question sort de ce périmètre, réponds p
 
     private function buildSystemPrompt(ChatbotSession $session): string
     {
-        $system = self::SYSTEM . $this->buildDbContext();
-
-        if (!$session->lead_captured) {
-            $system .= "\n\nImportant : si l'utilisateur montre un intérêt concret pour acheter une voiture (demande d'infos sur un modèle précis, envie de contacter un vendeur, question sur une visite ou un essai), propose-lui poliment de laisser son prénom et son numéro de téléphone pour qu'un conseiller le rappelle. Dans ce cas uniquement, termine ton message par exactement le marqueur : [FORM:contact]";
-        }
-
-        return $system;
+        return self::SYSTEM . $this->buildDbContext();
     }
 
     // Build OpenAI-style messages array from session history + new message

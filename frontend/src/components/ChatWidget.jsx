@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
 const API_STREAM = `${import.meta.env.VITE_BACKEND_URL}/api/chat/stream`;
-const API_LEAD   = `${import.meta.env.VITE_BACKEND_URL}/api/chat/lead`;
 const WELCOME    = { role: "model", text: "Bonjour ! Je suis l'assistant ocazz.ma.\nComment puis-je vous aider aujourd'hui ?" };
 
 function getSessionId() {
@@ -116,13 +115,21 @@ export default function ChatWidget() {
   const [msgs, setMsgs]           = useState([WELCOME]);
   const [input, setInput]         = useState("");
   const [streaming, setStreaming] = useState(false);
-  const [leadForm, setLeadForm]   = useState(false);
-  const [leadSent, setLeadSent]   = useState(false);
-  const [leadSending, setLeadSending] = useState(false);
 
-  const msgsRef  = useRef(null);
-  const inputRef = useRef(null);
-  const abortRef = useRef(null);
+  const msgsRef      = useRef(null);
+  const inputRef     = useRef(null);
+  const abortRef     = useRef(null);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (open && containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
 
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 150);
@@ -130,7 +137,7 @@ export default function ChatWidget() {
 
   useEffect(() => {
     if (msgsRef.current) msgsRef.current.scrollTop = msgsRef.current.scrollHeight;
-  }, [msgs, leadForm, leadSent]);
+  }, [msgs]);
 
   const send = async () => {
     const text = input.trim();
@@ -139,7 +146,6 @@ export default function ChatWidget() {
     setMsgs(ms => [...ms, { role: "user", text }, { role: "model", text: "" }]);
     setInput("");
     setStreaming(true);
-    setLeadForm(false);
 
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -177,7 +183,6 @@ export default function ChatWidget() {
             const chunk = JSON.parse(raw);
 
             // Custom events from backend
-            if (chunk.type === "ask_lead") { setLeadForm(true); continue; }
             if (chunk.type === "error") {
               setMsgs(ms => [...ms.slice(0, -1), { role: "error", text: chunk.text }]);
               continue;
@@ -212,29 +217,6 @@ export default function ChatWidget() {
     }
   };
 
-  const submitLead = async (name, phone) => {
-    setLeadSending(true);
-    try {
-      const token = localStorage.getItem("token");
-      await fetch(API_LEAD, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ session_id: sessionId.current, name, phone }),
-      });
-      setLeadSent(true);
-      setLeadForm(false);
-      setMsgs(ms => [...ms, {
-        role: "model",
-        text: `Merci ${name} ! Un conseiller vous contactera au ${phone} très prochainement. 😊`,
-      }]);
-    } catch {
-      setLeadSending(false);
-    }
-  };
-
   const handleKey = e => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
   };
@@ -243,9 +225,6 @@ export default function ChatWidget() {
     if (streaming) { abortRef.current?.abort(); setStreaming(false); }
     setMsgs([WELCOME]);
     setInput("");
-    setLeadForm(false);
-    setLeadSent(false);
-    setLeadSending(false);
     // New session on clear
     const newId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36);
     localStorage.setItem("chatbot_session_id", newId);
@@ -257,7 +236,7 @@ export default function ChatWidget() {
   const canSend      = input.trim().length > 0 && !streaming;
 
   return (
-    <>
+    <div ref={containerRef}>
       <style>{`
         @keyframes dot-bounce {
           0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
@@ -412,12 +391,6 @@ export default function ChatWidget() {
                       {m.text}
                     </div>
                   </div>
-                  {/* Lead form appears under the last bot message that triggered it */}
-                  {!isUser && isLast && leadForm && !leadSent && (
-                    <div style={{ paddingLeft: 33 }}>
-                      <LeadForm onSubmit={submitLead} sending={leadSending} />
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -477,6 +450,6 @@ export default function ChatWidget() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
