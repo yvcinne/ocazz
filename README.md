@@ -98,12 +98,6 @@ cd prediction/api && source .venv/bin/activate && python app.py
 cd backend && php artisan reverb:start
 ```
 
-## Comptes par défaut
-
-| Rôle | Email | Mot de passe |
-|---|---|---|
-| Admin | admin@ocazz.ma | Admin@1234 |
-
 ## Fonctionnalités
 
 - Marketplace avec filtres (marque, carburant, boîte, prix, kilométrage, année…)
