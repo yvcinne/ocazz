@@ -176,10 +176,14 @@ export default function ChatWidget() {
           try {
             const chunk = JSON.parse(raw);
 
-            // Custom event: show lead form
+            // Custom events from backend
             if (chunk.type === "ask_lead") { setLeadForm(true); continue; }
+            if (chunk.type === "error") {
+              setMsgs(ms => [...ms.slice(0, -1), { role: "error", text: chunk.text }]);
+              continue;
+            }
 
-            const delta = chunk.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+            const delta = chunk.choices?.[0]?.delta?.content ?? "";
             if (delta) {
               // Strip [FORM:contact] marker if it slips through in text
               const clean = delta.replace(/\[FORM:contact\]/g, "");
