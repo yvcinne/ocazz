@@ -1,0 +1,84 @@
+# Requirements — ocazz.ma
+
+## System
+
+| Software | Minimum | Tested on |
+|---|---|---|
+| PHP | 8.1+ | 8.5.0 |
+| Composer | 2.x | 2.8.12 |
+| Node.js | 18+ | 26.2.0 |
+| npm | 9+ | 11.14.1 |
+| MySQL / MariaDB | MySQL 8+ / MariaDB 10.6+ | MariaDB 12.2.2 |
+| Python | 3.10+ | 3.14.5 |
+
+---
+
+## Backend — Laravel (`backend/`)
+
+Managed by `composer.json`. Install with `composer install`.
+
+| Package | Version |
+|---|---|
+| laravel/framework | ^10.10 |
+| laravel/sanctum | ^3.3 |
+| laravel/socialite | ^5.27 |
+| laravel/reverb | ^1.10 |
+| guzzlehttp/guzzle | ^7.2 |
+| laravel/tinker | ^2.8 |
+
+---
+
+## Frontend — React / Vite (`frontend/`)
+
+Managed by `package.json`. Install with `npm install`.
+
+**Runtime dependencies**
+
+| Package | Version |
+|---|---|
+| react | ^19.2.4 |
+| react-dom | ^19.2.4 |
+| react-router-dom | ^7.14.1 |
+| axios | ^1.15.0 |
+| shadcn | ^4.2.0 |
+| radix-ui | ^1.4.3 |
+| lucide-react | ^1.8.0 |
+| tailwindcss | ^3.4.19 |
+| clsx / tailwind-merge | ^2.1.1 / ^3.5.0 |
+
+**Dev dependencies**
+
+| Package | Version |
+|---|---|
+| vite | ^8.0.4 |
+| @vitejs/plugin-react | ^6.0.1 |
+| eslint | ^9.39.4 |
+| typescript types | ^19.x / ^25.x |
+
+---
+
+## Prediction service — Flask (`prediction/api/`)
+
+Managed by `requirements.txt`. Install with `pip install -r requirements.txt`.
+
+| Package | Version |
+|---|---|
+| flask | >=3.0.0 |
+| flask-cors | >=4.0.0 |
+| scikit-learn | >=1.4.0 |
+| pandas | >=2.0.0 |
+| numpy | >=1.26.0 |
+| joblib | >=1.3.0 |
+| matplotlib | >=3.8.0 |
+| seaborn | >=0.13.0 |
+| jupyter / nbconvert | >=1.0.0 / >=7.0.0 |
+
+---
+
+## External services (API keys required)
+
+| Service | Used for | Where to get |
+|---|---|---|
+| Groq | Chatbot LLM (Llama 3.3 70B) | [console.groq.com](https://console.groq.com) |
+| Google OAuth | Social login | [console.cloud.google.com](https://console.cloud.google.com) |
+| SMTP (optional) | Email verification / password reset | Any SMTP provider |
