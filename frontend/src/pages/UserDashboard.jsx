@@ -189,6 +189,9 @@ function ProfilTab({ user, onUserUpdate }) {
   const [error, setError]       = useState("");
   const [pwError, setPwError]   = useState("");
   const [pwSuccess, setPwSuccess] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew]         = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const set    = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
   const setPw  = k => e => setPwForm(f => ({ ...f, [k]: e.target.value }));
@@ -221,6 +224,23 @@ function ProfilTab({ user, onUserUpdate }) {
   };
 
   const inputStyle = { fontSize: 15, width: "100%", boxSizing: "border-box" };
+
+  const EyeBtn = ({ show, onToggle }) => (
+    <button type="button" onClick={onToggle}
+      style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0, color: "#999", display: "flex", alignItems: "center" }}
+      aria-label={show ? "Masquer" : "Afficher"}>
+      {show ? (
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+        </svg>
+      ) : (
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+        </svg>
+      )}
+    </button>
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -270,16 +290,25 @@ function ProfilTab({ user, onUserUpdate }) {
           <form onSubmit={savePassword} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
               <label className="form-label">Mot de passe actuel</label>
-              <input type="password" value={pwForm.current_password} onChange={setPw("current_password")} required className="input-field" style={inputStyle} />
+              <div style={{ position: "relative" }}>
+                <input type={showCurrent ? "text" : "password"} value={pwForm.current_password} onChange={setPw("current_password")} required className="input-field" style={{ ...inputStyle, paddingRight: 44 }} />
+                <EyeBtn show={showCurrent} onToggle={() => setShowCurrent(v => !v)} />
+              </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
                 <label className="form-label">Nouveau mot de passe</label>
-                <input type="password" value={pwForm.password} onChange={setPw("password")} required className="input-field" style={inputStyle} />
+                <div style={{ position: "relative" }}>
+                  <input type={showNew ? "text" : "password"} value={pwForm.password} onChange={setPw("password")} required className="input-field" style={{ ...inputStyle, paddingRight: 44 }} />
+                  <EyeBtn show={showNew} onToggle={() => setShowNew(v => !v)} />
+                </div>
               </div>
               <div>
                 <label className="form-label">Confirmer</label>
-                <input type="password" value={pwForm.password_confirmation} onChange={setPw("password_confirmation")} required className="input-field" style={inputStyle} />
+                <div style={{ position: "relative" }}>
+                  <input type={showConfirm ? "text" : "password"} value={pwForm.password_confirmation} onChange={setPw("password_confirmation")} required className="input-field" style={{ ...inputStyle, paddingRight: 44 }} />
+                  <EyeBtn show={showConfirm} onToggle={() => setShowConfirm(v => !v)} />
+                </div>
               </div>
             </div>
             <button type="submit" disabled={savingPw} className="btn-primary" style={{ alignSelf: "flex-start", padding: "10px 28px" }}>

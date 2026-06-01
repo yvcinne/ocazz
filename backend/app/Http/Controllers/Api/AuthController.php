@@ -26,18 +26,19 @@ class AuthController extends Controller
         ]);
 
         $user = User::create([
-            'name'      => $data['name'],
-            'last_name' => $data['last_name'] ?? null,
-            'email'     => $data['email'],
-            'phone'     => $data['phone'] ?? null,
-            'password'  => Hash::make($data['password']),
+            'name'              => $data['name'],
+            'last_name'         => $data['last_name'] ?? null,
+            'email'             => $data['email'],
+            'phone'             => $data['phone'] ?? null,
+            'password'          => Hash::make($data['password']),
+            'email_verified_at' => now(),
         ]);
 
-        try { $user->sendEmailVerificationNotification(); } catch (\Exception) {}
+        $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
-            'status'  => 'check_email',
-            'message' => 'Un lien de vérification a été envoyé à votre adresse email.',
+            'user'  => $user,
+            'token' => $token,
         ], 201);
     }
 
@@ -58,13 +59,6 @@ class AuthController extends Controller
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
-        }
-
-        if (! $user->hasVerifiedEmail() && $user->role !== 'admin') {
-            return response()->json([
-                'status'  => 'email_not_verified',
-                'message' => 'Veuillez vérifier votre adresse email avant de vous connecter.',
-            ], 403);
         }
 
         $token = $user->createToken('auth-token')->plainTextToken;
