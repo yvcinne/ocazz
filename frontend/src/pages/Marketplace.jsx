@@ -65,9 +65,15 @@ function CarCard({ car, isFav, onToggleFav }) {
           <p style={{ color: "var(--text-faint)", fontSize: 12, margin: "0 0 5px", fontWeight: 500 }}>
             {car.model_year} · {car.fuel_type} · {km} km
           </p>
-          <p style={{ fontFamily: "Manrope,sans-serif", fontWeight: 700, fontSize: 15, margin: "0 0 12px", color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <p style={{ fontFamily: "Manrope,sans-serif", fontWeight: 700, fontSize: 15, margin: "0 0 6px", color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {car.brand} {car.model}
           </p>
+          {car.user && (
+            <p style={{ fontSize: 12, color: "var(--text-faint)", margin: "0 0 10px", display: "flex", alignItems: "center", gap: 4 }}>
+              <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+              {car.user.name} {car.user.last_name}
+            </p>
+          )}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontFamily: "Manrope,sans-serif", fontWeight: 800, fontSize: 19, color: "var(--accent-blue)" }}>
               {price} <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text-faint)" }}>MAD</span>

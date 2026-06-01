@@ -20,9 +20,15 @@ class MessageController extends Controller
 
         $senderId = auth()->id();
 
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('message-images', 'public');
+        }
+
         $message = $conversation->messages()->create([
-            'sender_id' => $senderId,
-            'content'   => $request->content,
+            'sender_id'  => $senderId,
+            'content'    => $request->content ?? '',
+            'image_path' => $imagePath,
         ]);
 
         // Incrémenter le compteur non-lus du destinataire

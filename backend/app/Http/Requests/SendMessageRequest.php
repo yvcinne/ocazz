@@ -14,15 +14,17 @@ class SendMessageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'content' => 'required|string|min:1|max:2000',
+            'content' => 'nullable|string|min:1|max:2000',
+            'image'   => 'nullable|image|max:5120',
         ];
     }
 
-    public function messages(): array
+    public function withValidator($validator): void
     {
-        return [
-            'content.required' => 'Message content cannot be empty.',
-            'content.max'      => 'Message cannot exceed 2000 characters.',
-        ];
+        $validator->after(function ($v) {
+            if (empty($this->content) && !$this->hasFile('image')) {
+                $v->errors()->add('content', 'A message or an image is required.');
+            }
+        });
     }
 }

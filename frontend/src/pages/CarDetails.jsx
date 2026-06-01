@@ -349,8 +349,25 @@ export default function CarDetails() {
               </button>
             </div>
 
-            {/* Message form */}
-            <div style={{ border:"1px solid var(--border)", borderRadius:"var(--radius-md)", boxShadow:"var(--shadow-xs)", padding:"24px" }}>
+            {/* Seller info */}
+            {car.user && (
+              <div style={{ border:"1px solid var(--border)", borderRadius:"var(--radius-md)", boxShadow:"var(--shadow-xs)", padding:"18px 24px", marginBottom:20, display:"flex", alignItems:"center", gap:14 }}>
+                <div style={{ width:42, height:42, borderRadius:"50%", background:"var(--accent-blue)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <span style={{ color:"#fff", fontWeight:700, fontSize:15, fontFamily:"Manrope,sans-serif" }}>
+                    {car.user.name?.[0]?.toUpperCase()}{car.user.last_name?.[0]?.toUpperCase()}
+                  </span>
+                </div>
+                <div>
+                  <p style={{ margin:0, fontWeight:700, fontSize:14, fontFamily:"Manrope,sans-serif", color:"var(--text-primary)" }}>
+                    {car.user.name} {car.user.last_name}
+                  </p>
+                  <p style={{ margin:0, fontSize:12, color:"var(--text-faint)" }}>Vendeur</p>
+                </div>
+              </div>
+            )}
+
+            {/* Message form — hidden for the owner */}
+            {user?.id !== car?.user_id && <div style={{ border:"1px solid var(--border)", borderRadius:"var(--radius-md)", boxShadow:"var(--shadow-xs)", padding:"24px" }}>
               <h4 style={{ margin:"0 0 4px", fontSize:18 }}>Envoyer un message</h4>
               <p style={{ color:"var(--text-muted)", fontSize:13, margin:"0 0 20px" }}>Posez une question directement au vendeur.</p>
               {sent ? (
@@ -364,6 +381,7 @@ export default function CarDetails() {
               ) : (
                 <form onSubmit={handleSendMessage} style={{ display:"flex", flexDirection:"column", gap:12 }}>
                   <textarea required value={msg} onChange={e => setMsg(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); e.target.form.requestSubmit(); } }}
                     placeholder={`Intéressé par ce ${car.brand} ${car.model}…`}
                     className="textarea-field" style={{ fontSize:14, minHeight:100 }}/>
                   <button type="submit" disabled={sending} className="btn-primary" style={{ width:"100%" }}>
@@ -371,7 +389,7 @@ export default function CarDetails() {
                   </button>
                 </form>
               )}
-            </div>
+            </div>}
           </div>
         </div>
       </div>

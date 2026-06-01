@@ -53,8 +53,10 @@ export default function Register() {
     setErrors({});
     try {
       const res = await axiosClient.post("/register", form);
-      if (res.data.status === "check_email") {
-        setCheckEmail(true);
+      if (res.data.token) {
+        localStorage.setItem("token", res.data.token);
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+        navigate("/");
         return;
       }
     } catch (err) {

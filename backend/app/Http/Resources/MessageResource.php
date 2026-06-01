@@ -17,6 +17,7 @@ class MessageResource extends JsonResource
                 'name' => $this->sender->name,
             ],
             'content'         => $this->content,
+            'image_url'       => $this->image_path ? asset('storage/' . $this->image_path) : null,
             'read_at'         => $this->read_at?->toISOString(),
             'is_read'         => $this->isRead(),
             'is_mine'         => $this->sender_id === $request->user()->id,

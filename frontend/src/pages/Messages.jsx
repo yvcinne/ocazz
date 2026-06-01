@@ -54,8 +54,13 @@ export default function Messages() {
   const [convError, setConvError]         = useState(null);
   const [deleting, setDeleting]           = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [imageFile, setImageFile]         = useState(null);
+  const [imagePreview, setImagePreview]   = useState(null);
+  const [isDragging, setIsDragging]       = useState(false);
+  const [lightboxImg, setLightboxImg]     = useState(null);
   const messagesRef = useRef(null);
   const inputRef    = useRef(null);
+  const fileInputRef = useRef(null);
   const currentUser = getCurrentUser();
 
   const loadConversations = useCallback(() => {
@@ -67,9 +72,14 @@ export default function Messages() {
 
   useEffect(() => { loadConversations(); }, [loadConversations]);
 
+  useEffect(() => {
+    return () => window.dispatchEvent(new CustomEvent("messages:conv-active", { detail: { active: false } }));
+  }, []);
+
   const openConversation = useCallback((conv) => {
     if (activeConv?.id === conv.id) return;
     setActiveConv(conv);
+    window.dispatchEvent(new CustomEvent("messages:conv-active", { detail: { active: true } }));
     setMessages([]);
     setConfirmDelete(false);
     setLoadingMsgs(true);
@@ -117,16 +127,28 @@ export default function Messages() {
   const sendMessage = async (e) => {
     e?.preventDefault();
     const content = text.trim();
-    if (!content || !activeConv || sending) return;
+    if ((!content && !imageFile) || !activeConv || sending) return;
     setSending(true);
     const optimistic = {
-      id: `temp-${Date.now()}`, content, is_mine: true,
+      id: `temp-${Date.now()}`, content, image_url: imagePreview, is_mine: true,
       created_at: new Date().toISOString(), sender: { name: currentUser?.name }, is_read: false,
     };
     setMessages(ms => [...ms, optimistic]);
     setText("");
+    setImageFile(null);
+    setImagePreview(null);
     try {
-      const res = await axiosClient.post(`/conversations/${activeConv.id}/messages`, { content });
+      let res;
+      if (imageFile) {
+        const fd = new FormData();
+        if (content) fd.append("content", content);
+        fd.append("image", imageFile);
+        res = await axiosClient.post(`/conversations/${activeConv.id}/messages`, fd, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      } else {
+        res = await axiosClient.post(`/conversations/${activeConv.id}/messages`, { content });
+      }
       const sent = res.data?.data ?? res.data;
       setMessages(ms => ms.map(m => m.id === optimistic.id ? sent : m));
       loadConversations();
@@ -140,6 +162,14 @@ export default function Messages() {
     }
   };
 
+  const handleImagePick = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+    e.target.value = "";
+  };
+
   const deleteConversation = async () => {
     if (!activeConv) return;
     setDeleting(true);
@@ -147,6 +177,7 @@ export default function Messages() {
       await axiosClient.delete(`/conversations/${activeConv.id}`);
       setConversations(cs => cs.filter(c => c.id !== activeConv.id));
       setActiveConv(null);
+      window.dispatchEvent(new CustomEvent("messages:conv-active", { detail: { active: false } }));
       setMessages([]);
       setConfirmDelete(false);
     } catch (e) {
@@ -384,10 +415,24 @@ export default function Messages() {
               {/* Messages area */}
               <div
                 ref={messagesRef}
+                onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setIsDragging(false); }}
+                onDrop={e => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                  const file = e.dataTransfer.files?.[0];
+                  if (file && file.type.startsWith("image/")) {
+                    setImageFile(file);
+                    setImagePreview(URL.createObjectURL(file));
+                  }
+                }}
                 style={{
                   flex: 1, overflowY: "auto", padding: "20px 24px 8px",
                   display: "flex", flexDirection: "column", gap: 8,
-                  background: "#F8FAFC",
+                  background: isDragging ? "#EFF6FF" : "#F8FAFC",
+                  border: isDragging ? "2px dashed #3B82F6" : "2px dashed transparent",
+                  transition: "background 0.15s, border-color 0.15s",
+                  position: "relative",
                 }}
               >
                 {loadingMsgs ? (
@@ -409,7 +454,7 @@ export default function Messages() {
                         {!mine && <Avatar name={msg.sender?.name} size={28} />}
                         <div style={{ maxWidth: "60%" }}>
                           <div style={{
-                            padding: "9px 14px",
+                            padding: msg.image_url && !msg.content ? "4px" : "9px 14px",
                             fontSize: 13.5, lineHeight: "21px",
                             whiteSpace: "pre-wrap",
                             borderRadius: mine ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
@@ -419,8 +464,16 @@ export default function Messages() {
                             boxShadow: mine ? "0 2px 8px rgba(59,130,246,0.25)" : "0 1px 3px rgba(0,0,0,0.05)",
                             opacity: isTemp ? 0.65 : 1,
                             transition: "opacity 0.2s",
+                            overflow: "hidden",
                           }}>
-                            {msg.content}
+                            {msg.image_url && (
+                              <img src={msg.image_url} alt="attachment"
+                                style={{ display: "block", maxWidth: 220, maxHeight: 220, borderRadius: 10, objectFit: "cover", marginBottom: msg.content ? 6 : 0, cursor: "zoom-in" }}
+                                onClick={() => setLightboxImg(msg.image_url)}
+                                onError={e => e.target.style.display = "none"}
+                              />
+                            )}
+                            {msg.content && <span>{msg.content}</span>}
                           </div>
                           <p style={{
                             margin: "4px 0 0", fontSize: 10.5, color: "#94A3B8",
@@ -448,49 +501,103 @@ export default function Messages() {
                 onSubmit={sendMessage}
                 style={{
                   padding: "12px 16px", background: "#fff",
-                  borderTop: "1px solid #E2E8F0",
-                  display: "flex", gap: 10, alignItems: "flex-end", flexShrink: 0,
+                  borderTop: "1px solid #E2E8F0", flexShrink: 0,
                 }}
               >
-                <textarea
-                  ref={inputRef}
-                  value={text}
-                  onChange={e => setText(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Votre message… (Entrée pour envoyer)"
-                  className="msg-input"
-                  style={{
-                    flex: 1, minHeight: 44, maxHeight: 120, resize: "none",
-                    fontSize: 13.5, padding: "11px 14px", lineHeight: "20px",
-                    border: "1px solid #E2E8F0", borderRadius: 12,
-                    background: "#F8FAFC", fontFamily: "inherit",
-                    color: "#1E293B", outline: "none", transition: "border-color 0.15s",
-                  }}
-                />
-                <button
-                  type="submit"
-                  disabled={!text.trim() || sending}
-                  style={{
-                    width: 44, height: 44, padding: 0, flexShrink: 0,
-                    borderRadius: 12, border: "none", cursor: text.trim() && !sending ? "pointer" : "not-allowed",
-                    background: text.trim() && !sending ? "#3B82F6" : "#E2E8F0",
-                    color: text.trim() && !sending ? "#fff" : "#94A3B8",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    transition: "background 0.15s, color 0.15s",
-                    boxShadow: text.trim() && !sending ? "0 2px 8px rgba(59,130,246,0.3)" : "none",
-                  }}
-                >
-                  {sending ? <Spinner size={16} /> : (
-                    <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                {/* Image preview */}
+                {imagePreview && (
+                  <div style={{ position: "relative", display: "inline-block", marginBottom: 8 }}>
+                    <img src={imagePreview} alt="preview" style={{ height: 72, borderRadius: 8, objectFit: "cover", border: "1px solid #E2E8F0" }} />
+                    <button type="button" onClick={() => { setImageFile(null); setImagePreview(null); }}
+                      style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", background: "#EF4444", border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700 }}>
+                      ×
+                    </button>
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
+                  {/* Hidden file input */}
+                  <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleImagePick} />
+                  {/* Paperclip button */}
+                  <button type="button" onClick={() => fileInputRef.current?.click()}
+                    style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 12, border: "1px solid #E2E8F0", background: "#F8FAFC", color: "#64748B", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s" }}
+                    onMouseOver={e => e.currentTarget.style.background = "#E2E8F0"}
+                    onMouseOut={e => e.currentTarget.style.background = "#F8FAFC"}
+                  >
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
                     </svg>
-                  )}
-                </button>
+                  </button>
+                  <textarea
+                    ref={inputRef}
+                    value={text}
+                    onChange={e => setText(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Votre message… (Entrée pour envoyer)"
+                    className="msg-input"
+                    style={{
+                      flex: 1, minHeight: 44, maxHeight: 120, resize: "none",
+                      fontSize: 13.5, padding: "11px 14px", lineHeight: "20px",
+                      border: "1px solid #E2E8F0", borderRadius: 12,
+                      background: "#F8FAFC", fontFamily: "inherit",
+                      color: "#1E293B", outline: "none", transition: "border-color 0.15s",
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={(!text.trim() && !imageFile) || sending}
+                    style={{
+                      width: 44, height: 44, padding: 0, flexShrink: 0,
+                      borderRadius: 12, border: "none",
+                      cursor: (text.trim() || imageFile) && !sending ? "pointer" : "not-allowed",
+                      background: (text.trim() || imageFile) && !sending ? "#3B82F6" : "#E2E8F0",
+                      color: (text.trim() || imageFile) && !sending ? "#fff" : "#94A3B8",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      transition: "background 0.15s, color 0.15s",
+                      boxShadow: (text.trim() || imageFile) && !sending ? "0 2px 8px rgba(59,130,246,0.3)" : "none",
+                    }}
+                  >
+                    {sending ? <Spinner size={16} /> : (
+                      <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </form>
             </>
           )}
         </div>
       </div>
+
+      {/* Image lightbox */}
+      {lightboxImg && (
+        <div
+          onClick={() => setLightboxImg(null)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 9999,
+            background: "rgba(0,0,0,0.85)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >
+          <button
+            onClick={() => setLightboxImg(null)}
+            style={{
+              position: "absolute", top: 16, right: 16,
+              width: 40, height: 40, borderRadius: "50%",
+              background: "rgba(255,255,255,0.15)", border: "none",
+              color: "#fff", fontSize: 22, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              backdropFilter: "blur(4px)",
+            }}
+          >×</button>
+          <img
+            src={lightboxImg}
+            alt="full"
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth: "90vw", maxHeight: "90vh", borderRadius: 10, objectFit: "contain", boxShadow: "0 8px 40px rgba(0,0,0,0.5)" }}
+          />
+        </div>
+      )}
     </>
   );
 }

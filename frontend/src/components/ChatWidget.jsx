@@ -136,7 +136,14 @@ function LeadForm({ onSubmit, sending }) {
 export default function ChatWidget() {
   const { pathname }      = useLocation();
   const navigate          = useNavigate();
-  const btnBottom         = pathname === "/messages" ? 108 : 28;
+  const [convActive, setConvActive] = useState(false);
+  const btnBottom         = convActive ? 108 : 28;
+
+  useEffect(() => {
+    const handler = e => setConvActive(e.detail?.active ?? false);
+    window.addEventListener("messages:conv-active", handler);
+    return () => window.removeEventListener("messages:conv-active", handler);
+  }, []);
   const sessionId         = useRef(getSessionId());
 
   const [open, setOpen]           = useState(false);
