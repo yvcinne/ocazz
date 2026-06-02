@@ -68,14 +68,14 @@ function Lightbox({ imgs, index, onClose, onPrev, onNext }) {
 
       {/* Main image */}
       <div
-        onClick={e => e.stopPropagation()}
         style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", width:"100%", padding:"60px 80px 16px", boxSizing:"border-box", position:"relative" }}
       >
         <img
           src={imgs[index]}
           referrerPolicy="no-referrer"
           alt=""
-          style={{ maxWidth:"100%", maxHeight:"100%", objectFit:"contain", userSelect:"none" }}
+          onClick={e => e.stopPropagation()}
+          style={{ maxWidth:"100%", maxHeight:"100%", objectFit:"contain", userSelect:"none", cursor:"default" }}
         />
 
         {/* Prev */}
