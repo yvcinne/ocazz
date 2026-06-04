@@ -2,12 +2,13 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { axiosClient } from "../api/axios";
 
-const BRANDS = ["Toutes", "Audi", "BMW", "Citroën", "Dacia", "Fiat", "Ford", "Honda", "Hyundai",
+const BRANDS  = ["Toutes", "Audi", "BMW", "Citroën", "Dacia", "Fiat", "Ford", "Honda", "Hyundai",
   "Kia", "Land Rover", "Mercedes", "Nissan", "Opel", "Peugeot", "Renault",
   "Seat", "Skoda", "Toyota", "Volkswagen", "Volvo"];
-const FUELS  = ["Tous", "Diesel", "Essence", "Hybride", "Electrique", "LPG"];
-const TRANS  = ["Toutes", "Manuelle", "Automatique"];
-const CONDS  = ["Tous", "Neuf", "Excellent", "Très bon", "Bon", "Correct"];
+const FUELS   = ["Tous", "Diesel", "Essence", "Hybride", "Electrique", "LPG"];
+const TRANS   = ["Toutes", "Manuelle", "Automatique"];
+const CONDS   = ["Tous", "Neuf", "Excellent", "Très bon", "Bon", "Correct"];
+const CITIES  = ["Toutes", "Casablanca", "Rabat", "Marrakech", "Fès", "Tanger", "Agadir", "Meknès", "Oujda", "Kénitra", "Tétouan", "Salé", "Safi", "Mohammedia", "El Jadida", "Béni Mellal", "Nador", "Settat", "Laâyoune", "Autre"];
 const CURRENT_YEAR = new Date().getFullYear();
 
 function HeartButton({ isFav, onClick }) {
@@ -113,6 +114,7 @@ export default function Marketplace() {
   const [maxPrice, setMaxPrice] = useState(1000000);
   const [minYear,  setMinYear]  = useState(2000);
   const [maxYear,  setMaxYear]  = useState(CURRENT_YEAR);
+  const [city,     setCity]     = useState("Toutes");
   const [sort,     setSort]     = useState("recent");
   const [page,     setPage]     = useState(1);
 
@@ -213,6 +215,7 @@ export default function Marketplace() {
     if (fuel   !== "Tous")   params.fuel_type     = fuel;
     if (trans  !== "Toutes") params.transmission  = trans;
     if (cond   !== "Tous")   params.car_condition = cond;
+    if (city   !== "Toutes") params.city          = city;
     if (maxPrice < 1000000)  params.max_price     = maxPrice;
     if (minYear  > 2000)     params.min_year      = minYear;
     if (maxYear  < CURRENT_YEAR) params.max_year  = maxYear;
@@ -228,13 +231,13 @@ export default function Marketplace() {
       })
       .catch(() => setCars([]))
       .finally(() => setLoading(false));
-  }, [search, brand, fuel, trans, cond, maxPrice, minYear, maxYear, sort, page]);
+  }, [search, brand, fuel, trans, cond, city, maxPrice, minYear, maxYear, sort, page]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
   const reset = () => {
     setSearch(""); setBrand("Toutes"); setFuel("Tous"); setTrans("Toutes");
-    setCond("Tous"); setMaxPrice(1000000); setMinYear(2000);
+    setCond("Tous"); setCity("Toutes"); setMaxPrice(1000000); setMinYear(2000);
     setMaxYear(CURRENT_YEAR); setSort("recent"); setPage(1);
   };
 
@@ -324,6 +327,7 @@ export default function Marketplace() {
         <aside style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "24px 20px", position: "sticky", top: 100, boxShadow: "var(--shadow-xs)" }}>
           <h4 style={{ margin: "0 0 20px", fontSize: 16 }}>Filtres</h4>
           <Sel label="Marque" opts={BRANDS} val={brand} set={setBrand} />
+          <Sel label="Ville" opts={CITIES} val={city} set={setCity} />
           <Sel label="Carburant" opts={FUELS} val={fuel} set={setFuel} />
           <Sel label="Boîte" opts={TRANS} val={trans} set={setTrans} />
           <Sel label="État" opts={CONDS} val={cond} set={setCond} />

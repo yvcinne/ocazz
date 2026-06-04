@@ -48,6 +48,10 @@ class AnnonceController extends Controller
             $query->where('car_condition', $request->car_condition);
         }
 
+        if ($request->filled('city')) {
+            $query->where('city', $request->city);
+        }
+
         if ($request->filled('min_price')) {
             $query->where('price', '>=', $request->min_price);
         }
@@ -97,6 +101,7 @@ class AnnonceController extends Controller
             'fuel_type'    => 'required',
             'transmission' => 'required',
             'car_condition'=> 'required',
+            'city'         => 'nullable|string',
             'images'       => 'nullable|array|max:8',
             'images.*'     => 'image|max:10240',
         ]);
@@ -114,6 +119,7 @@ class AnnonceController extends Controller
             'transmission' => $request->transmission,
             'fiscal_power' => $request->fiscal_power,
             'car_condition'=> $request->car_condition,
+            'city'         => $request->city,
             'status'       => 'pending',
         ]);
 
@@ -148,7 +154,7 @@ class AnnonceController extends Controller
      */
     public function update(Request $request, Annonce $annonce)
     {
-        if ($annonce->user_id !== auth()->id()) {
+        if ((int) $annonce->user_id !== (int) auth()->id()) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -179,7 +185,7 @@ class AnnonceController extends Controller
      */
     public function destroy(Annonce $annonce)
     {
-        if ($annonce->user_id !== auth()->id()) {
+        if ((int) $annonce->user_id !== (int) auth()->id()) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -192,7 +198,7 @@ class AnnonceController extends Controller
 
     public function markSold(Annonce $annonce)
     {
-        if ($annonce->user_id !== auth()->id()) {
+        if ((int) $annonce->user_id !== (int) auth()->id()) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 

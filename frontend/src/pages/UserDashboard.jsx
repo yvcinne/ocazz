@@ -10,6 +10,72 @@ function getUser() {
   try { return JSON.parse(localStorage.getItem("user")); } catch { return null; }
 }
 
+// ── delete confirm modal ──────────────────────────────────────────────────────
+
+function DeleteModal({ car, onConfirm, onCancel, loading }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div onClick={onCancel} style={{ position: "absolute", inset: 0, background: "rgba(15,23,42,0.5)", backdropFilter: "blur(2px)" }} />
+      <div style={{ position: "relative", background: "#fff", borderRadius: 16, width: "100%", maxWidth: 400, boxShadow: "0 24px 64px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.08)", overflow: "hidden" }}>
+
+        {/* top accent bar */}
+        <div style={{ height: 4, background: "linear-gradient(90deg,#ef4444,#f87171)" }} />
+
+        <div style={{ padding: "32px 28px 28px" }}>
+          {/* icon */}
+          <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+            <svg width="26" height="26" fill="none" stroke="#ef4444" viewBox="0 0 24 24" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+          </div>
+
+          {/* title */}
+          <h3 style={{ textAlign: "center", margin: "0 0 8px", fontSize: 19, fontFamily: "Manrope,sans-serif", fontWeight: 800, color: "#0f172a", letterSpacing: "-0.3px" }}>
+            Supprimer l'annonce ?
+          </h3>
+
+          {/* car name pill */}
+          <div style={{ display: "flex", justifyContent: "center", margin: "0 0 20px" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 99, padding: "5px 14px", fontSize: 13, fontWeight: 700, color: "#334155" }}>
+              <svg width="13" height="13" fill="none" stroke="#64748b" viewBox="0 0 24 24" strokeWidth={2}>
+                <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99z"/>
+                <circle cx="7.5" cy="14.5" r="1.5"/><circle cx="16.5" cy="14.5" r="1.5"/>
+              </svg>
+              {car.brand} {car.model} · {car.model_year}
+            </span>
+          </div>
+
+          {/* warning notice */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "11px 14px", marginBottom: 24 }}>
+            <svg width="16" height="16" fill="none" stroke="#ef4444" viewBox="0 0 24 24" strokeWidth={2} style={{ flexShrink: 0 }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+            </svg>
+            <p style={{ margin: 0, fontSize: 13, color: "#b91c1c", fontWeight: 500, lineHeight: "19px" }}>
+              Cette action est <strong>irréversible</strong>. L'annonce et ses photos seront définitivement supprimées.
+            </p>
+          </div>
+
+          {/* buttons */}
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={onCancel} disabled={loading}
+              style={{ flex: 1, padding: "11px 0", background: "#f8fafc", border: "1.5px solid #e2e8f0", borderRadius: 10, cursor: "pointer", fontFamily: "Manrope,sans-serif", fontWeight: 600, fontSize: 14, color: "#64748b", transition: "all 0.15s" }}
+              onMouseOver={e => { e.currentTarget.style.borderColor = "#94a3b8"; e.currentTarget.style.color = "#334155"; }}
+              onMouseOut={e => { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.color = "#64748b"; }}>
+              Annuler
+            </button>
+            <button onClick={onConfirm} disabled={loading}
+              style={{ flex: 1, padding: "11px 0", background: loading ? "#f87171" : "#ef4444", border: "none", borderRadius: 10, cursor: loading ? "not-allowed" : "pointer", fontFamily: "Manrope,sans-serif", fontWeight: 700, fontSize: 14, color: "#fff", transition: "background 0.15s", boxShadow: "0 2px 8px rgba(239,68,68,0.35)" }}
+              onMouseOver={e => { if (!loading) e.currentTarget.style.background = "#dc2626"; }}
+              onMouseOut={e => { if (!loading) e.currentTarget.style.background = "#ef4444"; }}>
+              {loading ? "Suppression…" : "Oui, supprimer"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── sub-components ────────────────────────────────────────────────────────────
 
 function EmptyState({ icon, text, action }) {
@@ -69,10 +135,10 @@ function FavCard({ fav, onRemove }) {
   );
 }
 
-function AnnonceCard({ car, onMarkSold }) {
+function AnnonceCard({ car, onMarkSold, onDelete, soldLoading }) {
   const img = car.images?.[0]?.url;
-  const statusLabel = { active: "Active", sold: "Vendue", pending: "En attente", rejected: "Rejetée" };
-  const statusColor = { active: "var(--success)", sold: "var(--text-faint)", pending: "#f59e0b", rejected: "var(--error)" };
+  const statusLabel = { approved: "Active", sold: "Vendue", pending: "En attente", rejected: "Rejetée" };
+  const statusColor = { approved: "var(--success)", sold: "var(--text-faint)", pending: "#f59e0b", rejected: "var(--error)" };
   return (
     <div style={{ border: "1px solid var(--border)", background: "var(--bg-white)", display: "flex", gap: 0, overflow: "hidden" }}>
       <Link to={`/cars/${car.id}`} style={{ display: "block", width: 130, flexShrink: 0, background: "var(--bg-off)", textDecoration: "none" }}>
@@ -102,17 +168,29 @@ function AnnonceCard({ car, onMarkSold }) {
             {fmt(car.price)} <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text-faint)" }}>MAD</span>
           </span>
         </div>
-        {car.status === "active" && (
+        <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+          {car.status === "approved" && (
+            <button
+              onClick={() => onMarkSold(car.id)}
+              disabled={soldLoading === car.id}
+              style={{ background: "none", border: "1px solid var(--border)", cursor: soldLoading === car.id ? "not-allowed" : "pointer", color: "var(--text-muted)", fontSize: 12, fontWeight: 600, padding: "4px 10px", display: "flex", alignItems: "center", gap: 4, opacity: soldLoading === car.id ? 0.6 : 1 }}
+            >
+              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+              {soldLoading === car.id ? "En cours…" : "Marquer vendu"}
+            </button>
+          )}
           <button
-            onClick={() => onMarkSold(car.id)}
-            style={{ alignSelf: "flex-start", marginTop: 10, background: "none", border: "1px solid var(--border)", cursor: "pointer", color: "var(--text-muted)", fontSize: 12, fontWeight: 600, padding: "4px 10px", display: "flex", alignItems: "center", gap: 4 }}
+            onClick={() => onDelete(car.id)}
+            style={{ background: "none", border: "1px solid var(--error)", cursor: "pointer", color: "var(--error)", fontSize: 12, fontWeight: 600, padding: "4px 10px", display: "flex", alignItems: "center", gap: 4 }}
           >
             <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
             </svg>
-            Marquer vendu
+            Supprimer
           </button>
-        )}
+        </div>
       </div>
     </div>
   );
@@ -150,8 +228,12 @@ function FavorisTab() {
 }
 
 function MesAnnoncesTab() {
-  const [annonces, setAnnonces] = useState([]);
-  const [loading, setLoading]  = useState(true);
+  const [annonces,    setAnnonces]    = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [toDelete,    setToDelete]    = useState(null);
+  const [deleting,    setDeleting]    = useState(false);
+  const [soldLoading, setSoldLoading] = useState(null);
+  const [soldError,   setSoldError]   = useState("");
 
   useEffect(() => {
     axiosClient.get("/my-annonces")
@@ -160,8 +242,31 @@ function MesAnnoncesTab() {
   }, []);
 
   const onMarkSold = async (id) => {
-    await axiosClient.post(`/annonces/${id}/mark-sold`);
-    setAnnonces(a => a.map(x => x.id === id ? { ...x, status: "sold" } : x));
+    setSoldLoading(id);
+    setSoldError("");
+    try {
+      await axiosClient.post(`/annonces/${id}/mark-sold`);
+      setAnnonces(a => a.map(x => x.id === id ? { ...x, status: "sold" } : x));
+    } catch (err) {
+      setSoldError(err.response?.data?.error ?? "Une erreur est survenue.");
+    } finally {
+      setSoldLoading(null);
+    }
+  };
+
+  const onDelete = (id) => {
+    setToDelete(annonces.find(x => x.id === id));
+  };
+
+  const confirmDelete = async () => {
+    setDeleting(true);
+    try {
+      await axiosClient.delete(`/annonces/${toDelete.id}`);
+      setAnnonces(a => a.filter(x => x.id !== toDelete.id));
+      setToDelete(null);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (loading) return <div style={{ padding: 32 }}>{[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: 110, marginBottom: 12 }} />)}</div>;
@@ -172,9 +277,25 @@ function MesAnnoncesTab() {
   />;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {annonces.map(car => <AnnonceCard key={car.id} car={car} onMarkSold={onMarkSold} />)}
-    </div>
+    <>
+      {toDelete && (
+        <DeleteModal
+          car={toDelete}
+          loading={deleting}
+          onConfirm={confirmDelete}
+          onCancel={() => setToDelete(null)}
+        />
+      )}
+      {soldError && (
+        <div style={{ background: "#FFF5F5", border: "1px solid var(--error)", borderLeft: "4px solid var(--error)", padding: "10px 14px", marginBottom: 12, fontSize: 13, color: "var(--error)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          {soldError}
+          <button onClick={() => setSoldError("")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--error)", fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
+        </div>
+      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {annonces.map(car => <AnnonceCard key={car.id} car={car} onMarkSold={onMarkSold} onDelete={onDelete} soldLoading={soldLoading} />)}
+      </div>
+    </>
   );
 }
 

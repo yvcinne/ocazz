@@ -4,10 +4,11 @@ import { axiosClient } from "../api/axios";
 
 const STEPS = ["Votre véhicule", "Prix & Description"];
 
-const BRANDS = ["Audi","BMW","Citroën","Dacia","Fiat","Ford","Honda","Hyundai","Kia","Land Rover","Mercedes","Nissan","Opel","Peugeot","Renault","Seat","Skoda","Toyota","Volkswagen","Volvo","Autre"];
-const FUELS  = ["Diesel","Essence","Hybride","Electrique","LPG"];
-const TRANS  = ["Manuelle","Automatique"];
-const CONDS  = ["Neuf","Excellent","Très bon","Bon","Correct"];
+const BRANDS  = ["Audi","BMW","Citroën","Dacia","Fiat","Ford","Honda","Hyundai","Kia","Land Rover","Mercedes","Nissan","Opel","Peugeot","Renault","Seat","Skoda","Toyota","Volkswagen","Volvo","Autre"];
+const FUELS   = ["Diesel","Essence","Hybride","Electrique","LPG"];
+const TRANS   = ["Manuelle","Automatique"];
+const CONDS   = ["Neuf","Excellent","Très bon","Bon","Correct"];
+const CITIES  = ["Casablanca","Rabat","Marrakech","Fès","Tanger","Agadir","Meknès","Oujda","Kénitra","Tétouan","Salé","Safi","Mohammedia","El Jadida","Béni Mellal","Nador","Settat","Laâyoune","Autre"];
 
 function getUser() {
   try { return JSON.parse(localStorage.getItem("user")); } catch { return null; }
@@ -70,7 +71,7 @@ const Inp = ({ label, type = "text", placeholder = "", value, onChange, error, o
   </Field>
 );
 
-const DEFAULT_FORM = { brand: "", model: "", model_year: "", mileage: "", fuel_type: "", transmission: "", car_condition: "", fiscal_power: "", price: "", description: "" };
+const DEFAULT_FORM = { brand: "", model: "", model_year: "", mileage: "", fuel_type: "", transmission: "", car_condition: "", fiscal_power: "", city: "", price: "", description: "" };
 
 function readPrefill() {
   try {
@@ -125,6 +126,7 @@ export default function SellYourCar() {
     if (!form.fuel_type)    e.fuel_type    = "Requis";
     if (!form.transmission) e.transmission = "Requis";
     if (!form.car_condition)e.car_condition= "Requis";
+    if (!form.city)         e.city         = "Requis";
     return e;
   };
 
@@ -161,7 +163,7 @@ export default function SellYourCar() {
         Object.entries(err.response.data.errors).forEach(([k, msgs]) => { mapped[k] = msgs[0]; });
         setErrors(mapped);
         if (mapped.brand || mapped.model || mapped.model_year || mapped.mileage ||
-            mapped.fuel_type || mapped.transmission || mapped.car_condition) {
+            mapped.fuel_type || mapped.transmission || mapped.car_condition || mapped.city) {
           setStep(1);
         }
       } else {
@@ -248,6 +250,7 @@ export default function SellYourCar() {
                   <Sel label="Carburant" value={form.fuel_type} onChange={set("fuel_type")} opts={FUELS} error={errors.fuel_type}/>
                   <Sel label="Boîte de vitesse" value={form.transmission} onChange={set("transmission")} opts={TRANS} error={errors.transmission}/>
                   <Sel label="État du véhicule" value={form.car_condition} onChange={set("car_condition")} opts={CONDS} error={errors.car_condition}/>
+                  <Sel label="Ville" value={form.city} onChange={set("city")} opts={CITIES} error={errors.city}/>
                   <Inp label="Puissance fiscale" value={form.fiscal_power} onChange={set("fiscal_power")} placeholder="Ex: 7 CV" optional/>
                 </div>
                 <button onClick={onNext} className="btn-primary" style={{ alignSelf: "flex-start" }}>Continuer →</button>
